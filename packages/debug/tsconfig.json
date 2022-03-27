@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "sourceRoot": "./lib",
+  },
+  "include": [
+    "./lib/debug.ts",
+    "./lib/types.d.ts",
+  ]
+}

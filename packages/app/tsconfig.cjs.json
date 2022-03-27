@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": false,
+  },
+  "include": [
+    "./lib/index.ts",
+    "./lib/init.ts",
+  ]
+}
