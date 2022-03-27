@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": false,
+  },
+  "include": [
+    "./lib/main.ts",
+    "/ESP32/moddable/typings/**/*.d.ts",
+    "/ESP32/moddable/xs/includes/xs.d.ts",
+  ],
+}

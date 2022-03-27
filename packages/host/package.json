@@ -1,0 +1,28 @@
+{
+  "name": "host",
+  "version": "0.0.0",
+  "description": "The host defines the software environment",
+  "author": "Richard Lea <rlea@outlook.jp>",
+  "homepage": "https://github.com/chigix/js-macro#readme",
+  "license": "ISC",
+  "main": "lib/main.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chigix/js-macro.git"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.esm5.json && shx cp ./lib/*.json ../../dist/host/",
+    "flash": "mcconfig ../../dist/host/manifest.json -d -m -p esp32",
+    "test": "echo \"Error: run tests from root\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/chigix/js-macro/issues"
+  }
+}

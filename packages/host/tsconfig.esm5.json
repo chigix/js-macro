@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ES2015",
+    "target": "ES5",
+    "outDir": "../../dist/host"
+  },
+  "include": [
+    "./lib/main.ts",
+    "/ESP32/moddable/typings/modules.d.ts",
+    "/ESP32/moddable/xs/includes/xs.d.ts",
+  ],
+}
