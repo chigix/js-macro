@@ -1,13 +1,17 @@
 import Modules from "modules";
 
 export default function () {
-	if (Modules.has("check")) {
-		const check = Modules.importNow("check") as () => void;
-		check();
-		console.log(check);
-		if (Modules.has("example"))
-			Modules.importNow("example");
-	} else {
-		trace("Device flashed. Ready to install apps.\n");
-	}
+
+  if (Modules.has("check")) {
+    const check = Modules.importNow("check");
+    check();
+    if (Modules.has("app")) {
+      Modules.importNow("app");
+    } else {
+      trace("app module is still not installed");
+    }
+  } else {
+    trace("Device flashed. Ready to install apps.\n");
+  }
+
 }

@@ -1,21 +1,35 @@
 {
   "include": [
     "$(MODDABLE)/examples/manifest_base.json",
+    "$(MODULES)/pins/digital/manifest.json",
+    "$(MODULES)/pins/digital/monitor/manifest.json",
     "$(MODDABLE)/modules/network/ble/manifest_server.json",
-    "$(MODDABLE)/modules/network/ble/manifest_client.json"
+    "$(MODULES)/base/modules/manifest.json"
   ],
+  "creation": {
+    "keys": {
+      "available": 512
+    }
+  },
   "defines": {
     "XS_MODS": 1
   },
   "modules": {
     "*": [
       "./main",
+      "./hidkeyboard",
+      "./keyboard-service",
       "$(MODULES)/base/modules/*"
     ]
   },
   "preload": [
+    "./main",
+    "./hidkeyboard",
     "modules"
   ],
+  "ble": {
+    "*" : [ "./bleservices/*" ]
+  },
   "strip": [],
   "build": {
     "NAME": "js-macro"

@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": false,
+  },
+  "include": [
+    "./lib/app.ts",
+    "./lib/pins.ts",
+    "./lib/hidkeyboard.ts",
+    "./lib/keyboard-service.ts",
+    "/ESP32/moddable/typings/net.d.ts",
+    "/ESP32/moddable/typings/ble.d.ts",
+    "/ESP32/moddable/typings/pins/digital.d.ts",
+    "/ESP32/moddable/typings/pins/digital/monitor.d.ts",
+    "/ESP32/moddable/typings/timer.d.ts",
+    "/ESP32/moddable/xs/includes/xs.d.ts",
+  ],
+}

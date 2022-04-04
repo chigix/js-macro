@@ -5,7 +5,12 @@
   },
   "include": [
     "./lib/main.ts",
+    "./lib/hidkeyboard.ts",
+    "./lib/keyboard-service.ts",
     "/ESP32/moddable/typings/**/*.d.ts",
     "/ESP32/moddable/xs/includes/xs.d.ts",
+  ],
+  "types": [
+    "node"
   ],
 }
