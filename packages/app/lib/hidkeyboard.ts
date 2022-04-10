@@ -12,9 +12,11 @@ const HID_1 = 0x1e;
 const HID_0 = 0x27;
 
 const HID_ENTER = 0x28;
+// const HID_ENTER = 0x9E;
 const HID_DOT = 0x37;
 const HID_SEMICOLON = 0x33;
 const HID_FORWARD_SLASH = 0x38;
+const HID_TAB = 0x2B;
 const HID_SPACE = 0x2C;
 const HID_BACKSPACE = 0x2A;
 
@@ -122,6 +124,8 @@ function getHIDCode(character: string) {
   if (value <= 122 && value >= 97) { // Letters
     value -= ASCII_a;
     value += HID_A;
+  } else if (value == 9) { // Space
+    value = HID_TAB;
   } else if (value == 32) { // Space
     value = HID_SPACE;
   } else if (value <= 57 && value >= 49) { // Numbers
@@ -160,7 +164,7 @@ function getHIDCode(character: string) {
 
 class HIDKeyboard {
 
-  public report: Uint8Array;
+  public readonly report: Uint8Array;
 
   constructor(
   ) {

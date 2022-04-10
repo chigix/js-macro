@@ -36,6 +36,8 @@
       "./pins",
       "./keyboard-service",
       "./hidkeyboard",
+      "./morse-ctx",
+      "./morse-util",
       "./app"
     ]
   }

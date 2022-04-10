@@ -21,8 +21,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && cd /ESP32/esp-idf && git clone -b v4.4 --recursive https://github.com/espressif/esp-idf.git \
     && cd $IDF_PATH && $IDF_PATH/install.sh && . $IDF_PATH/export.sh \
     && sed -i 's/^# alias ls=/alias ls=/' /root/.bashrc \
-    && sed -i 's/^# alias ll=/alias ll=/' /root/.bashrc \
-    && sed -i 's/^# export LS_OPTIONS=/export LS_OPTIONS=/' /root/.bashrc
+    && sed -i 's/^# alias ll=/alias ll=/' /root/.bashrc
+    # && sed -i 's/^# export LS_OPTIONS=/export LS_OPTIONS=/' /root/.bashrc
 
 # [Optional] Uncomment if you want to install an additional version of node using nvm
 # ARG EXTRA_NODE_VERSION=10

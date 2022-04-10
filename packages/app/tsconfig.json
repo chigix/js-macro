@@ -4,10 +4,7 @@
     "sourceMap": false,
   },
   "include": [
-    "./lib/app.ts",
-    "./lib/pins.ts",
-    "./lib/hidkeyboard.ts",
-    "./lib/keyboard-service.ts",
+    "./lib/*.ts",
     "/ESP32/moddable/typings/net.d.ts",
     "/ESP32/moddable/typings/ble.d.ts",
     "/ESP32/moddable/typings/pins/digital.d.ts",

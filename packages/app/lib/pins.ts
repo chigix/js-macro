@@ -30,9 +30,9 @@ export function initPinsCtx() {
     }, 100);
   });
 
-  return {
+  return Object.freeze({
     led, keys,
     addKeyUpListener: (l: keyListener) => risingListeners.push(l),
     addKeyDownListener: (l: keyListener) => fallingListeners.push(l),
-  };
+  });
 }

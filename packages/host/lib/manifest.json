@@ -8,7 +8,8 @@
   ],
   "creation": {
     "keys": {
-      "available": 512
+      "available": 512,
+      "static": 65536
     }
   },
   "defines": {

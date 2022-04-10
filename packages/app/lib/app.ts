@@ -1,71 +1,41 @@
 import { initPinsCtx } from './pins';
 import { createKeyboardService } from "./keyboard-service";
+import { createMorseContext } from "./morse-ctx";
 
 function bootstrap() {
   trace("Bootstraping...\n");
-  const context = initPinsCtx();
+  const pinCtx = Object.freeze(initPinsCtx());
   trace("Pins Initialized\n");
   trace("Initializing BLE HID\n");
 
-  const kbService = createKeyboardService({
+  pinCtx.led.write(1);
+
+  const morseCtx = createMorseContext();
+
+  const kbService = createKeyboardService(Object.freeze({
     deviceName: 'JS-Macro Keypad',
     onKeyboardBound: () => {
       trace(`Keyboard Bounded\n`);
     },
     onKeyboardUnbound: () => {
       trace(`Keyboard Unbounded\n`);
-    }
+    },
+  }));
+
+  morseCtx.onKeySend(o => kbService.onKeyTap(o));
+  morseCtx.onKeyPressing(o => kbService.onKeyDown(o));
+  morseCtx.onKeyReleased(o => kbService.onKeyUp(o));
+  morseCtx.onForceHistoryEmpty(() => {
+    pinCtx.led.write(0);
   });
 
-  context.addKeyDownListener((key, index) => {
+  pinCtx.addKeyDownListener((key, index) => {
     trace(`Key ${index} Pushed\n`);
-    switch (index) {
-      case 0:
-        kbService.onKeyDown({ character: 'a' });
-        break;
-      case 1:
-        kbService.onKeyDown({ character: 'b' });
-        break;
-      case 2:
-        kbService.onKeyDown({ character: 'c' });
-        break;
-      case 3:
-        kbService.onKeyDown({ character: 'd' });
-        break;
-      case 4:
-        kbService.onKeyDown({ character: 'e' });
-        break;
-      case 5:
-        kbService.onKeyDown({ character: 'f' });
-        break;
-      default:
-        break;
-    }
+    morseCtx.recordKeyDown(index);
   });
-  context.addKeyUpListener((key, index) => {
+  pinCtx.addKeyUpListener((key, index) => {
     trace(`Key ${index} Released\n`);
-    switch (index) {
-      case 0:
-        kbService.onKeyUp({ character: 'a' });
-        break;
-      case 1:
-        kbService.onKeyUp({ character: 'b' });
-        break;
-      case 2:
-        kbService.onKeyUp({ character: 'c' });
-        break;
-      case 3:
-        kbService.onKeyUp({ character: 'd' });
-        break;
-      case 4:
-        kbService.onKeyUp({ character: 'e' });
-        break;
-      case 5:
-        kbService.onKeyUp({ character: 'f' });
-        break;
-      default:
-        break;
-    }
+    morseCtx.recordKeyUp(index);
   });
   trace("Listeners Working\n");
 }
