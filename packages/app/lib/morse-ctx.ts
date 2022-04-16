@@ -2,6 +2,7 @@ import { KeyName, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
 import { KeyCountBuffer } from "./morse-buffer";
 import {
   attemptSpaceKey, attemptBackspaceKey, attemptEnterKey, attemptTabKey,
+  attemptOccupySebtRelease,
 } from "./morse-util";
 import {
   dashDots2Char,
@@ -51,16 +52,22 @@ export function createMorseContext() {
 
     private attemptsOnKeyUp = {
       0: () => { _cbs.releaseKey({ character: ' ' }); return true; },
-      1: () => attemptStoreDashdots(history),
+      1: () => attemptOccupySebtRelease(history)
+        || attemptStoreDashdots(history),
       2: () => this.attemptForceHistoryEmpty()
+        || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       3: () => this.attemptForceHistoryEmpty()
+        || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       4: () => true,
-      5: () => attemptStoreDashdots(history),
+      5: () => attemptOccupySebtRelease(history)
+        || attemptStoreDashdots(history),
       6: () => this.attemptForceHistoryEmpty()
+        || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       7: () => this.attemptForceHistoryEmpty()
+        || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
     } as { [key: number]: () => boolean };
 

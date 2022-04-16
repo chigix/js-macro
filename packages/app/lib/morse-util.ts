@@ -1,5 +1,5 @@
 import Timer from "timer";
-import { KeyLayer } from "./morse-consts";
+import { KeyLayer, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
 import { KeyCountBuffer } from "./morse-buffer";
 
 /**
@@ -12,6 +12,13 @@ const FORCE_EMPTY_KEY_PATTERNS = [
 ];
 Object.freeze(FORCE_EMPTY_KEY_PATTERNS);
 
+const SEBT_KEY_PATTERNS = [
+  0b01100000, 0b00110000, 0b00000110, 0b00000011,
+];
+Object.freeze(SEBT_KEY_PATTERNS);
+
+const SEBT_KEY_REVERSE = SEBT_KEY_PATTERNS.map(p => ~p + 256);
+Object.freeze(SEBT_KEY_REVERSE);
 
 const dashDots2NumArr: {
   [key: string]: (ctx: KeyCountBuffer) => void,
@@ -39,6 +46,7 @@ Object.freeze(dashDots2NumArr);
 
 function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
   holdKey: () => void, releaseKey: () => void) {
+  trace(`${ctx.changeFlag} -> sebtKeyTemplate!\n`);
   if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;
   }
@@ -78,6 +86,40 @@ function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
         releaseKey();
       return false;
   }, 50);
+  return true;
+}
+
+export function attemptOccupySebtRelease(ctx: KeyCountBuffer) {
+  let _keySeq: number[] | undefined = ctx.keySequence;
+  let prevPatternExpect: number | undefined = 0;
+  for (let index = _keySeq.length - 3; index > _keySeq.length - 5; index--) {
+    if (_keySeq[index] < 10) {
+      prevPatternExpect |= PUSH_KEY[_keySeq[index]];
+    } else {
+      _keySeq = undefined;
+      return false;
+    }
+  }
+  if (SEBT_KEY_PATTERNS.indexOf(prevPatternExpect & 0b01110111) === -1) {
+    _keySeq = undefined;
+    return false;
+  }
+  prevPatternExpect = undefined;
+  let lastPatternExpect: number | undefined = 255;
+  for (let index = _keySeq.length - 1; index > _keySeq.length - 3; index--) {
+    if (_keySeq[index] >= 10) {
+      lastPatternExpect &= RELEASE_KEY[_keySeq[index] - 10];
+    } else {
+      _keySeq = undefined;
+      return false;
+    }
+  }
+  _keySeq = undefined;
+  if (SEBT_KEY_REVERSE.indexOf(lastPatternExpect & 0b01110111) === -1) {
+    lastPatternExpect = undefined;
+    return false;
+  }
+  lastPatternExpect = undefined;
   return true;
 }
 
