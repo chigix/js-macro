@@ -18,7 +18,7 @@
     "url": "git+https://github.com/chigix/js-macro.git"
   },
   "scripts": {
-    "build": "shx rm -r ../../dist/app && tsc --project tsconfig.esm5.json && shx cp ./lib/*.json ../../dist/app/",
+    "build": "shx rm -rf ../../dist/app && tsc --project tsconfig.esm5.json && shx cp ./lib/*.json ../../dist/app/",
     "flash": "mcrun ../../dist/app/manifest.json -d -m -p esp32",
     "test": "echo \"Error: run tests from root\" && exit 1",
     "lint": "eslint . --ext .ts"

@@ -12,13 +12,14 @@ const HID_1 = 0x1e;
 const HID_0 = 0x27;
 
 const HID_ENTER = 0x28;
-// const HID_ENTER = 0x9E;
 const HID_DOT = 0x37;
 const HID_SEMICOLON = 0x33;
 const HID_FORWARD_SLASH = 0x38;
 const HID_TAB = 0x2B;
 const HID_SPACE = 0x2C;
 const HID_BACKSPACE = 0x2A;
+const HID_OS = 0xE7;
+const HID_ESC = 0x29;
 
 const HID_BT = 0x35;
 const HID_MINUS = 0x2D;
@@ -27,7 +28,7 @@ const HID_BACKSLASH = 0x31;
 const HID_SINGLEQUOTE = 0x34;
 const HID_COMMA = 0x36;
 
-const HID_MODIFIERS = Object.freeze({
+const HID_MODIFIERS = {
   LEFT_CONTROL: 0b00000001,
   LEFT_SHIFT: 0b00000010,
   LEFT_ALT: 0b00000100,
@@ -36,7 +37,8 @@ const HID_MODIFIERS = Object.freeze({
   RIGHT_SHIFT: 0b00100000,
   RIGHT_ALT: 0b01000000,
   RIGHT_GUI: 0b10000000
-})
+};
+Object.freeze(HID_MODIFIERS);
 
 export type Options = {
   /**
@@ -121,7 +123,11 @@ function getHIDCode(character: string) {
     value += 32;
   }
 
-  if (value <= 122 && value >= 97) { // Letters
+  if (character === 'app') { // Windows Key
+    value = HID_OS;
+  } else if (character === 'esc') { // ESC Key
+    value = HID_ESC;
+  } else if (value <= 122 && value >= 97) { // Letters
     value -= ASCII_a;
     value += HID_A;
   } else if (value == 9) { // Space

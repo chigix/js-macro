@@ -1,88 +1,60 @@
 import Timer from "timer";
+import { KeyLayer } from "./morse-consts";
+import { KeyCountBuffer } from "./morse-buffer";
 
-const FORCE_EMPTY_KEY_PAIR = Object.freeze([2, 3, 6, 7]);
+/**
+ * 0b00000000
+ */
+type KeyMapBuffer = number;
 
-export type KeyCountHistory = {
-  dashDots: number[],
-  keySequence: number[],
-  keyDownCount: number[],
-  keyLocks: {
-    shift: boolean,
-    ctrl: boolean,
-    OS: boolean,
-    searchShortcuts: boolean,
-  },
-  keyLayer: 'dashDots' | 'numbers' | 'arrows' | 'media',
-  changeFlag: number,
-};
+const FORCE_EMPTY_KEY_PTNS = [
+  0b00110011, 0b00110010, 0b00110001, 0b00100011, 0b00010011,
+];
+Object.freeze(FORCE_EMPTY_KEY_PTNS);
 
-export type KeyCountHistoryRemovable = {
-  dashDots?: number[],
-  keySequence?: number[],
-  keyDownCount?: number[],
-  keyLocks: {
-    shift: boolean,
-    ctrl: boolean,
-    OS: boolean,
-    searchShortcuts: boolean,
-  },
-  keyLayer?: 'dashDots' | 'numbers' | 'arrows' | 'media',
-  changeFlag?: number,
-};
 
 const dashDots2NumArr: {
-  [key: string]: (ctx: KeyCountHistory) => void,
-} = Object.freeze({
-  '1': (ctx: KeyCountHistory) => ctx.dashDots.push(0),
-  '5': (ctx: KeyCountHistory) => ctx.dashDots.push(1),
-  '3': (ctx: KeyCountHistory) => {
+  [key: string]: (ctx: KeyCountBuffer) => void,
+} = {
+  '1': (ctx: KeyCountBuffer) => ctx.dashDots.push(0),
+  '5': (ctx: KeyCountBuffer) => ctx.dashDots.push(1),
+  '3': (ctx: KeyCountBuffer) => {
     let len: number | undefined = ctx.dashDots.length;
     ctx.dashDots[len] = 0;
     ctx.dashDots[len + 1] = 0;
     len = undefined;
   },
-  '2': (ctx: KeyCountHistory) => {
+  '2': (ctx: KeyCountBuffer) => {
     let len: number | undefined = ctx.dashDots.length;
     ctx.dashDots[len] = 0;
     ctx.dashDots[len + 1] = 1;
     len = undefined;
   },
-  '6': (ctx: KeyCountHistory) => {
+  '6': (ctx: KeyCountBuffer) => {
     let len: number | undefined = ctx.dashDots.length;
     ctx.dashDots[len] = 1;
     ctx.dashDots[len + 1] = 0;
     len = undefined;
   },
-  '7': (ctx: KeyCountHistory) => {
+  '7': (ctx: KeyCountBuffer) => {
     let len: number | undefined = ctx.dashDots.length;
     ctx.dashDots[len] = 1;
     ctx.dashDots[len + 1] = 1;
     len = undefined;
   },
-});
+};
+Object.freeze(dashDots2NumArr);
 
-function sebtKeyTemplate(ctx: KeyCountHistory, keyPair: number[],
+function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
   holdKey: () => void, releaseKey: () => void) {
-  let pressing: boolean | undefined = false;
-  if (ctx.keyLayer !== 'dashDots') {
+  if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;
   }
   if (ctx.dashDots.length > 0) {
     return false;
   }
-  trace('Keypair: ', keyPair.join(', '), '  \n');
-  if (keyPair.some(
-    v => {
-      let occur: number | undefined = ctx.keyDownCount.lastIndexOf(v);
-      let len: number | undefined = ctx.keyDownCount.length;
-      if (occur < 0 || len - occur > 2) {
-        occur = undefined;
-        len = undefined;
-        return true;
-      }
-      occur = undefined;
-      len = undefined;
-    })) {
+  trace(`Keypair: ${keyExpect.toString(2)}\n`);
+  if ((ctx.keyPushed & 0b01110111) !== keyExpect) {
     return false;
   }
   let flagSnapshot: number | undefined = ctx.changeFlag;
@@ -94,108 +66,74 @@ function sebtKeyTemplate(ctx: KeyCountHistory, keyPair: number[],
     if (ctx.changeFlag !== flagSnapshot) {
       return false;
     }
+    if ((ctx.keyPushed & 0b01110111) !== keyExpect) {
+      return false;
+    }
     trace('SEBT Key! (Hold Key)\n');
-    pressing = true;
     holdKey();
   }, 10);
   // https://www.researchgate.net/publication/345984016_How_long_is_a_long_key_press
   let repeatTimer: Timer | undefined = Timer.repeat(() => {
-    if (ctx.changeFlag !== flagSnapshot) {
+    if (ctx.changeFlag === flagSnapshot
+      && (ctx.keyPushed & 0b01110111) === keyExpect) {
+      return true;
+    }
       if (repeatTimer) {
         Timer.clear(repeatTimer);
       }
       repeatTimer = undefined;
       flagSnapshot = undefined;
-      if (pressing) {
         releaseKey();
-        resetKeyCountHistory(ctx);
-      }
-      pressing = undefined;
       return false;
-    }
   }, 50);
   return true;
 }
 
-export function resetKeyCountHistory(ctx: KeyCountHistoryRemovable) {
-  // ctx.dashDots = undefined;
-  ctx.dashDots = [];
-  // ctx.keyDownCount = undefined;
-  ctx.keyDownCount = [];
-  ctx.keyLayer = 'dashDots';
-  ctx.keyLocks.shift = false;
-  ctx.keyLocks.ctrl = false;
-  ctx.keyLocks.OS = false;
-  ctx.keyLocks.searchShortcuts = false;
-  // ctx.keySequence = undefined;
-  ctx.keySequence = [];
-}
-
-export function bumpChangeFlag(ctx: KeyCountHistory) {
-  if (ctx.changeFlag > 1000) {
-    ctx.changeFlag = 0;
-  }
-  ctx.changeFlag++;
-}
-
-export function attemptOccupyForceEmpty(ctx: KeyCountHistory) {
-  let matchingCount: number | undefined = 0;
-  for (const v of FORCE_EMPTY_KEY_PAIR) {
-    let occur: number | undefined = ctx.keyDownCount.lastIndexOf(v);
-    let len: number | undefined = ctx.keyDownCount.length;
-    if (occur < 0 || len - occur > 4) {
-      occur = undefined;
-      len = undefined;
-      continue;
-    }
-    matchingCount++;
-  }
-  if (matchingCount > 2) {
+export function attemptOccupyForceEmpty(ctx: KeyCountBuffer) {
+  if (FORCE_EMPTY_KEY_PTNS.indexOf((ctx.keyPushed & 0b01110111)) > -1) {
     trace('Attempt Occupy Force Empty! # 5\n');
-    matchingCount = undefined;
     return true;
-  } else {
-    matchingCount = undefined;
-    return false;
-  }
+}
+  return false;
 }
 
-export function attemptCommitHistory(ctx: KeyCountHistory, commit: () => void) {
+
+export function attemptCommitHistory(ctx: KeyCountBuffer, commit: () => void) {
   if (ctx.dashDots.length < 1) {
     return false;
   }
-  if (ctx.keyDownCount.length !== 2) {
+  if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;
   }
-  if ([5, 6].some(
-    v => ctx.keyDownCount.lastIndexOf(v) < 0)) {
+  if ((ctx.keyPushed & 0b01110111) !== 0b00000110) {
     return false;
   }
   trace('Commit History!');
   commit();
   // resetKeyCountHistory is forbidden, because key layer should be kept.
-  ctx.keyDownCount = [];
-  ctx.dashDots = [];
-  ctx.keySequence = [];
-  trace('Commit History!', JSON.stringify(ctx), '\n');
+  ctx.emptyDashDots();
+  ctx.emptyKeySequences();
+  trace('Commit History!', ctx.toString(), '\n');
   return true;
 }
 
-export function attemptSpaceKey(ctx: KeyCountHistory, spaceKey: () => void, spaceRelease: () => void) {
-  return sebtKeyTemplate(ctx, [5, 6], spaceKey, spaceRelease);
+export function attemptSpaceKey(ctx: KeyCountBuffer, spaceKey: () => void, spaceRelease: () => void) {
+  return sebtKeyTemplate(ctx, 0b00000110, spaceKey, spaceRelease);
 }
-export function attemptBackspaceKey(ctx: KeyCountHistory, backKey: () => void, backRelease: () => void) {
-  return sebtKeyTemplate(ctx, [2, 3], backKey, backRelease);
+export function attemptBackspaceKey(ctx: KeyCountBuffer, backKey: () => void, backRelease: () => void) {
+  return sebtKeyTemplate(ctx, 0b00110000, backKey, backRelease);
 }
-export function attemptTabKey(ctx: KeyCountHistory, tabKey: () => void, tabRelease: () => void) {
-  return sebtKeyTemplate(ctx, [1, 2], tabKey, tabRelease);
+export function attemptTabKey(ctx: KeyCountBuffer, tabKey: () => void, tabRelease: () => void) {
+  return sebtKeyTemplate(ctx, 0b01100000, tabKey, tabRelease);
 }
-export function attemptEnterKey(ctx: KeyCountHistory, enterKey: () => void, enterRelease: () => void) {
-  return sebtKeyTemplate(ctx, [6, 7], enterKey, enterRelease);
+export function attemptEnterKey(ctx: KeyCountBuffer, enterKey: () => void, enterRelease: () => void) {
+  return sebtKeyTemplate(ctx, 0b00000011, enterKey, enterRelease);
 }
 
-export function attemptStoreDashdots(ctx: KeyCountHistory) {
-  if (ctx.keyLayer !== 'dashDots') {
+
+
+export function attemptStoreDashdots(ctx: KeyCountBuffer) {
+  if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;
   }
   let len: number | undefined = ctx.keySequence.length;
@@ -204,7 +142,7 @@ export function attemptStoreDashdots(ctx: KeyCountHistory) {
   if (shouldBeUpKey - shouldBeDownKey === 10) {
     trace('Dashdots Stored\n');
     dashDots2NumArr[shouldBeDownKey](ctx);
-    trace('Dashdots Stored', JSON.stringify(ctx), '\n');
+    trace('Dashdots Stored', ctx.toString(), '\n');
   }
   len = undefined;
   shouldBeUpKey = undefined;
@@ -212,23 +150,11 @@ export function attemptStoreDashdots(ctx: KeyCountHistory) {
   return true;
 }
 
-export function removeLastDown(ctx: KeyCountHistory, keyName: number) {
-  const { keyDownCount: _downCount } = ctx;
-  const popped = [] as number[];
-  while (_downCount.length > 0) {
-    const checkNumber = _downCount.pop();
-    if (checkNumber === undefined) {
-      return false;
-    }
-    if (checkNumber === keyName) {
-      break;
-    }
-    popped.push(checkNumber);
-  }
-  popped.forEach(v => _downCount.push(v));
-  return true;
-}
-
+/**
+ * @param dashdots
+ * @returns
+ * @url https://www.makoa.org/jlubin/morsecode.htm
+ */
 export function dashDots2Char(dashdots: string) {
   return {
     '01': 'a',
@@ -299,5 +225,7 @@ export function dashDots2Char(dashdots: string) {
     '10001': '=',
     '100101': '`',
     '000100': '$',
+    '110000': 'esc',
+    '001001': 'prtscn',
   }[dashdots];
 }

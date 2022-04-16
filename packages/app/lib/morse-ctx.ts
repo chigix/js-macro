@@ -1,13 +1,13 @@
+import { KeyName, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
+import { KeyCountBuffer } from "./morse-buffer";
 import {
-  resetKeyCountHistory, bumpChangeFlag, dashDots2Char,
   attemptSpaceKey, attemptBackspaceKey, attemptEnterKey, attemptTabKey,
 } from "./morse-util";
 import {
+  dashDots2Char,
   attemptStoreDashdots, attemptCommitHistory, attemptOccupyForceEmpty,
-  removeLastDown,
 } from "./morse-util";
-import type { Options } from "./hidkeyboard";
-import type { KeyCountHistory } from "./morse-util";
+import { Options, HID_MODIFIERS } from "./hidkeyboard";
 
 export function createMorseContext() {
 
@@ -26,19 +26,7 @@ export function createMorseContext() {
     }
   };
 
-  const keyCountHistory: KeyCountHistory = {
-    dashDots: [],
-    keySequence: [],
-    keyDownCount: [],
-    keyLocks: {
-      shift: false,
-      ctrl: false,
-      OS: false,
-      searchShortcuts: false,
-    },
-    keyLayer: 'dashDots',
-    changeFlag: 0,
-  };
+  const keyCountHistory = new KeyCountBuffer();
 
   class MorseContext {
 
@@ -79,15 +67,15 @@ export function createMorseContext() {
     /**
      * recordKeyDown
      */
-    public recordKeyDown(keyName: number) {
+    public recordKeyDown(keyName: KeyName) {
       if (keyName < 0 || keyName >= 8) {
         trace(`Impossible Key index: [${keyName}]\n`);
         return;
       }
-      bumpChangeFlag(keyCountHistory);
+      keyCountHistory.bumpChange();
       keyCountHistory.keySequence.push(keyName);
-      keyCountHistory.keyDownCount.push(keyName);
-      trace(JSON.stringify(keyCountHistory), '\n');
+      keyCountHistory.pushKey(keyName);
+      trace(`${keyName} Down -- `, keyCountHistory.toString(), '\n');
       this.attemptsOnKeyDown[keyName]();
     }
 
@@ -96,9 +84,10 @@ export function createMorseContext() {
         trace(`Impossible Key index: [${keyName}]\n`);
         return;
       }
-      bumpChangeFlag(keyCountHistory);
+      keyCountHistory.bumpChange();
       keyCountHistory.keySequence.push(keyName + 10);
-      removeLastDown(keyCountHistory, keyName);
+      keyCountHistory.releaseKey(keyName);
+      trace(`${keyName} Up -- `, keyCountHistory.toString(), '\n');
       this.attemptsOnKeyUp[keyName]();
     }
 
@@ -128,36 +117,45 @@ export function createMorseContext() {
     }
 
     private attemptForceHistoryEmpty() {
-      const { keySequence: _keySeq } = keyCountHistory;
-      trace('Force History Empty! 1', JSON.stringify(keyCountHistory), '\n');
-      if (keyCountHistory.keyDownCount.length > 0) {
+      let _keySeq: number[] | undefined = keyCountHistory.keySequence;
+      if (keyCountHistory.keyPushed > 0) {
         return false;
       }
       if (_keySeq.length < 8) {
+        _keySeq = undefined;
         return false;
       }
-      const positionCheck = {
-        '2': -1, '3': -1, '6': -1, '7': -1,
-        '12': -1, '13': -1, '16': -1, '17': -1,
-      } as { [key: string]: number };
-      for (let index = 0; index < 8; index++) {
-        const position = _keySeq.length - index - 1;
-        const record = _keySeq[position];
-        if (positionCheck[record + ''] === undefined) {
+      let prevPatternExpect: number | undefined = 0;
+      for (let index = _keySeq.length - 5; index > _keySeq.length - 9; index--) {
+        if (_keySeq[index] < 10) {
+          prevPatternExpect |= PUSH_KEY[_keySeq[index]];
+        } else {
+          _keySeq = undefined;
           return false;
         }
-        positionCheck[record + ''] === position;
       }
-      trace('Force History Empty! 1\n');
-      if ([2, 3, 6, 7].some(v => {
-        return positionCheck[v] - positionCheck[10 + v] > 0;
-      })) {
+      if (prevPatternExpect !== 0b00110011) {
+        _keySeq = undefined;
         return false;
       }
-      trace('Force History Empty!\n');
-      resetKeyCountHistory(keyCountHistory);
+      prevPatternExpect = undefined;
+      let lastPatternExpect: number | undefined = 255;
+      for (let index = _keySeq.length - 1; index > _keySeq.length - 5; index--) {
+        if (_keySeq[index] >= 10) {
+          lastPatternExpect &= RELEASE_KEY[_keySeq[index] - 10];
+        } else {
+          _keySeq = undefined;
+          return false;
+        }
+      }
+      _keySeq = undefined;
+      if (lastPatternExpect !== 0b11001100) {
+        return false;
+      }
+      lastPatternExpect = undefined;
+      keyCountHistory.resetAll();
       _cbs.onForceHistoryEmpty();
-      trace('Force History Empty!', JSON.stringify(keyCountHistory), '\n');
+      trace('Force History Empty!', keyCountHistory.toString(), '\n');
       return true;
     }
 

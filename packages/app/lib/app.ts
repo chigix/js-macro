@@ -4,7 +4,8 @@ import { createMorseContext } from "./morse-ctx";
 
 function bootstrap() {
   trace("Bootstraping...\n");
-  const pinCtx = Object.freeze(initPinsCtx());
+  const pinCtx = initPinsCtx();
+  Object.freeze(pinCtx);
   trace("Pins Initialized\n");
   trace("Initializing BLE HID\n");
 

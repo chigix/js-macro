@@ -8,9 +8,9 @@
   ],
   "creation": {
     "keys": {
-      "available": 512,
-      "static": 65536
-    }
+      "available": 512
+    },
+    "static": 65536
   },
   "defines": {
     "XS_MODS": 1
