@@ -26,42 +26,42 @@ export function createMorseContext() {
     }
   };
 
-  const keyCountHistory = new KeyCountBuffer();
+  const history = new KeyCountBuffer();
 
   class MorseContext {
 
     private attemptsOnKeyDown = {
       0: () => { _cbs.holdKey({ character: ' ' }); return true; },
-      1: () => attemptTabKey(keyCountHistory, () => _cbs.holdKey({ character: '\t' }), () => _cbs.releaseKey({ character: '\t' })),
-      2: () => attemptOccupyForceEmpty(keyCountHistory)
-        || attemptTabKey(keyCountHistory, () => _cbs.holdKey({ character: '\t' }), () => _cbs.releaseKey({ character: '\t' }))
-        || attemptBackspaceKey(keyCountHistory, () => _cbs.holdKey({ character: '\b' }), () => _cbs.releaseKey({ character: '\b' })),
-      3: () => attemptOccupyForceEmpty(keyCountHistory)
-        || attemptBackspaceKey(keyCountHistory, () => _cbs.holdKey({ character: '\b' }), () => _cbs.releaseKey({ character: '\b' })),
+      1: () => attemptTabKey(history, () => _cbs.holdKey({ character: '\t' }), () => _cbs.releaseKey({ character: '\t' })),
+      2: () => attemptOccupyForceEmpty(history)
+        || attemptTabKey(history, () => _cbs.holdKey({ character: '\t' }), () => _cbs.releaseKey({ character: '\t' }))
+        || attemptBackspaceKey(history, () => _cbs.holdKey({ character: '\b' }), () => _cbs.releaseKey({ character: '\b' })),
+      3: () => attemptOccupyForceEmpty(history)
+        || attemptBackspaceKey(history, () => _cbs.holdKey({ character: '\b' }), () => _cbs.releaseKey({ character: '\b' })),
       4: () => true,
-      5: () => attemptSpaceKey(keyCountHistory, () => _cbs.holdKey({ character: ' ' }), () => _cbs.releaseKey({ character: ' ' }))
-        || attemptCommitHistory(keyCountHistory, () => this.attemptSendCharacterFromMorse()),
-      6: () => attemptOccupyForceEmpty(keyCountHistory)
-        || attemptSpaceKey(keyCountHistory, () => _cbs.holdKey({ character: ' ' }), () => _cbs.releaseKey({ character: ' ' }))
-        || attemptEnterKey(keyCountHistory, () => _cbs.holdKey({ character: '\r' }), () => _cbs.releaseKey({ character: '\r' }))
-        || attemptCommitHistory(keyCountHistory, () => this.attemptSendCharacterFromMorse()),
-      7: () => attemptOccupyForceEmpty(keyCountHistory)
-        || attemptEnterKey(keyCountHistory, () => _cbs.holdKey({ character: '\r' }), () => _cbs.releaseKey({ character: '\r' })),
+      5: () => attemptSpaceKey(history, () => _cbs.holdKey({ character: ' ' }), () => _cbs.releaseKey({ character: ' ' }))
+        || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
+      6: () => attemptOccupyForceEmpty(history)
+        || attemptSpaceKey(history, () => _cbs.holdKey({ character: ' ' }), () => _cbs.releaseKey({ character: ' ' }))
+        || attemptEnterKey(history, () => _cbs.holdKey({ character: '\r' }), () => _cbs.releaseKey({ character: '\r' }))
+        || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
+      7: () => attemptOccupyForceEmpty(history)
+        || attemptEnterKey(history, () => _cbs.holdKey({ character: '\r' }), () => _cbs.releaseKey({ character: '\r' })),
     } as { [key: number]: () => boolean };
 
     private attemptsOnKeyUp = {
       0: () => { _cbs.releaseKey({ character: ' ' }); return true; },
-      1: () => attemptStoreDashdots(keyCountHistory),
+      1: () => attemptStoreDashdots(history),
       2: () => this.attemptForceHistoryEmpty()
-        || attemptStoreDashdots(keyCountHistory),
+        || attemptStoreDashdots(history),
       3: () => this.attemptForceHistoryEmpty()
-        || attemptStoreDashdots(keyCountHistory),
+        || attemptStoreDashdots(history),
       4: () => true,
-      5: () => attemptStoreDashdots(keyCountHistory),
+      5: () => attemptStoreDashdots(history),
       6: () => this.attemptForceHistoryEmpty()
-        || attemptStoreDashdots(keyCountHistory),
+        || attemptStoreDashdots(history),
       7: () => this.attemptForceHistoryEmpty()
-        || attemptStoreDashdots(keyCountHistory),
+        || attemptStoreDashdots(history),
     } as { [key: number]: () => boolean };
 
     /**
@@ -69,25 +69,25 @@ export function createMorseContext() {
      */
     public recordKeyDown(keyName: KeyName) {
       if (keyName < 0 || keyName >= 8) {
-        trace(`Impossible Key index: [${keyName}]\n`);
+        trace(`${history.changeFlag} -> Impossible Key index: [${keyName}]\n`);
         return;
       }
-      keyCountHistory.bumpChange();
-      keyCountHistory.keySequence.push(keyName);
-      keyCountHistory.pushKey(keyName);
-      trace(`${keyName} Down -- `, keyCountHistory.toString(), '\n');
+      history.bumpChange();
+      history.keySequence.push(keyName);
+      history.pushKey(keyName);
+      trace(`${history.changeFlag} -> ${keyName} Down -- `, history.toString(), '\n');
       this.attemptsOnKeyDown[keyName]();
     }
 
     public recordKeyUp(keyName: number) {
       if (keyName < 0 || keyName >= 8) {
-        trace(`Impossible Key index: [${keyName}]\n`);
+        trace(`${history.changeFlag} -> Impossible Key index: [${keyName}]\n`);
         return;
       }
-      keyCountHistory.bumpChange();
-      keyCountHistory.keySequence.push(keyName + 10);
-      keyCountHistory.releaseKey(keyName);
-      trace(`${keyName} Up -- `, keyCountHistory.toString(), '\n');
+      history.bumpChange();
+      history.keySequence.push(keyName + 10);
+      history.releaseKey(keyName);
+      trace(`${history.changeFlag} -> ${keyName} Up -- `, history.toString(), '\n');
       this.attemptsOnKeyUp[keyName]();
     }
 
@@ -107,18 +107,18 @@ export function createMorseContext() {
     }
 
     private attemptSendCharacterFromMorse() {
-      trace(`Current DashDots: ${keyCountHistory.dashDots}\n`);
-      const character = dashDots2Char(keyCountHistory.dashDots.join(''));
+      trace(`${history.changeFlag} -> Current DashDots: ${history.dashDots}\n`);
+      const character = dashDots2Char(history.dashDots.toString());
       if (character === undefined) {
-        trace(`${keyCountHistory.dashDots} is not implemented.\n`);
+        trace(`${history.changeFlag} -> ${history.dashDots} is not implemented.\n`);
         return;
       }
       _cbs.sendKey({ character });
     }
 
     private attemptForceHistoryEmpty() {
-      let _keySeq: number[] | undefined = keyCountHistory.keySequence;
-      if (keyCountHistory.keyPushed > 0) {
+      let _keySeq: number[] | undefined = history.keySequence;
+      if (history.keyPushed > 0) {
         return false;
       }
       if (_keySeq.length < 8) {
@@ -153,9 +153,9 @@ export function createMorseContext() {
         return false;
       }
       lastPatternExpect = undefined;
-      keyCountHistory.resetAll();
+      history.resetAll();
       _cbs.onForceHistoryEmpty();
-      trace('Force History Empty!', keyCountHistory.toString(), '\n');
+      trace(`${history.changeFlag} -> Force History Empty!`, history.toString(), '\n');
       return true;
     }
 

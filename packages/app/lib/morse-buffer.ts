@@ -1,5 +1,53 @@
 import { KeyLayer, ModifyLayer, KeyName, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
 
+class DashDotsBuffer {
+  constructor(
+    private allocates: Uint8Array,
+  ) {
+    allocates[5] = 0;
+  }
+
+
+  public get length(): number {
+    return this.allocates[5];
+  }
+
+
+  private set length(v: number) {
+    this.allocates[5] = v;
+  }
+
+  /**
+   * push
+   */
+  public push(dashdot: 0 | 1) {
+    if (this.length > 9) {
+      return;
+    }
+    this.allocates[6 + this.length++] = dashdot;
+    trace(`dashdots push ${this.length} : ${dashdot} \n`);
+    trace(`dashdots push ${this.toString()} \n`);
+  }
+
+  /**
+   * empty
+   */
+  public resetBuffer() {
+    this.length = 0;
+  }
+
+  /**
+   * toString
+   */
+  public toString() {
+    let result = '';
+    for (let index = 6; index < this.length + 6; index++) {
+      result += this.allocates[index];
+    }
+    return result;
+  }
+}
+
 class KeyLocksBuffer {
 
   constructor(
@@ -63,22 +111,22 @@ class KeyLocksBuffer {
 }
 
 export class KeyCountBuffer {
-  private _dashDots: number[];
   private _keySequence: number[];
-  private _allocates = new Uint8Array(5);
+  private _allocates = new Uint8Array(16);
   public readonly keyLocks: KeyLocksBuffer;
+  private readonly _dashDots: DashDotsBuffer;
 
   constructor() {
-    this._dashDots = [];
     this._keySequence = [];
     this._allocates[0] = 0; // changeFlag
     this._allocates[1] = ModifyLayer.CT_SH;
     this._allocates[2] = KeyLayer.DASHDOTS;
     this._allocates[3] = 0b00000000; // Key Pushed
-    this.keyLocks = new KeyLocksBuffer(this._allocates); // keyLocks
+    this.keyLocks = new KeyLocksBuffer(this._allocates); // keyLocks 4
+    this._dashDots = new DashDotsBuffer(this._allocates); // dashDots 5, 6-15
   }
 
-  public get dashDots(): number[] {
+  public get dashDots(): DashDotsBuffer {
     return this._dashDots;
   }
 
@@ -122,20 +170,13 @@ export class KeyCountBuffer {
    * resetAll
    */
   public resetAll() {
-    this._dashDots = [];
     this._keySequence = [];
     this._allocates[0] = 0;
     this._allocates[1] = ModifyLayer.CT_SH;
     this._allocates[2] = KeyLayer.DASHDOTS;
     this._allocates[3] = 0;
     this.keyLocks.resetBuffer();
-  }
-
-  /**
-   * emptyDashDots
-   */
-  public emptyDashDots() {
-    this._dashDots = [];
+    this.dashDots.resetBuffer();
   }
 
   /**
@@ -165,7 +206,7 @@ export class KeyCountBuffer {
    */
   public toString() {
     return JSON.stringify({
-      dashDots: this.dashDots,
+      dashDots: this.dashDots.toString(),
       keySequence: this.keySequence,
       changeFlag: this._allocates[0],
       modifyLayer: this._allocates[1],
