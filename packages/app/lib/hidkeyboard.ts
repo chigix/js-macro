@@ -129,21 +129,23 @@ function getHIDCode(character: string) {
     value += 32;
   }
 
-  if (character === 'app') { // Windows Key
+  if (character === '') { // No Character
+    value = 0;
+  } else if (character === 'app') { // Windows Key
     value = HID_OS;
   } else if (character === 'esc') { // ESC Key
     value = HID_ESC;
-  } else if (character === 'pageUp') { // ESC Key
+  } else if (character === 'pageUp') { // PageUp Key
     value = HID_PAGE_UP;
-  } else if (character === 'pageDown') { // ESC Key
+  } else if (character === 'pageDown') { // PageDown Key
     value = HID_PAGE_DOWN;
-  } else if (character === 'leftArrow') { // ESC Key
+  } else if (character === 'leftArrow') { // LeftArrow Key
     value = HID_LEFT_ARROW;
-  } else if (character === 'rightArrow') { // ESC Key
+  } else if (character === 'rightArrow') { // RightArrow Key
     value = HID_RIGHT_ARROW;
-  } else if (character === 'upArrow') { // ESC Key
+  } else if (character === 'upArrow') { // UpArrow Key
     value = HID_UP_ARROW;
-  } else if (character === 'downArrow') { // ESC Key
+  } else if (character === 'downArrow') { // DownArrow Key
     value = HID_DOWN_ARROW;
   } else if (value <= 122 && value >= 97) { // Letters
     value -= ASCII_a;
@@ -188,11 +190,12 @@ function getHIDCode(character: string) {
 
 class HIDKeyboard {
 
-  public readonly report: Uint8Array;
+  public readonly report = new Uint8Array(8);
+  public readonly mediaReport = new Uint8Array(1);
 
-  constructor(
-  ) {
-    this.report = Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 0]);
+  constructor() {
+    this.report.fill(0);
+    this.mediaReport.fill(0);
   }
 
   canHandle(options?: Options) {
@@ -232,6 +235,20 @@ class HIDKeyboard {
   public onKeyUp() {
     this.report[0] = 0;
     this.report[2] = 0;
+  }
+
+  /**
+   * onMediaSend
+   */
+  public onMediaDown(code: number) {
+    this.mediaReport[0] = code;
+  }
+
+  /**
+   * onMediaUp
+   */
+  public onMediaUp() {
+    this.mediaReport.fill(0);
   }
 }
 

@@ -23,12 +23,14 @@ export function createKeyboardService(_params: {
   class KeyboardService extends BLEServer {
 
     private keyboardReportCharacteristic?: Characteristic;
+    private mediaReportCharacteristic?: Characteristic;
     private batteryCharacteristic?: Characteristic;
 
     onReady(): void {
       this.deviceName = _params.deviceName;
       this.securityParameters = { encryption: true, bonding: true };
       this.keyboardReportCharacteristic = undefined;
+      this.mediaReportCharacteristic = undefined;
       this.startAdvertising(keyboardAdvertise);
     }
 
@@ -42,6 +44,7 @@ export function createKeyboardService(_params: {
       trace(`Device Disconnected: [${device.address}]\n`);
       _params.onKeyboardUnbound(this);
       this.keyboardReportCharacteristic = undefined;
+      this.mediaReportCharacteristic = undefined;
       this.startAdvertising(keyboardAdvertise);
     }
 
@@ -49,6 +52,13 @@ export function createKeyboardService(_params: {
       if ('keyboard_input_report' === ch.name) {
         this.keyboardReportCharacteristic = ch;
         trace(`keyboard Report bound by request: [${ch.name}]\n`);
+        if (!_bound) {
+          _bound = true;
+          _params.onKeyboardBound(this);
+        }
+      } else if ('media_input_report' === ch.name) {
+        this.mediaReportCharacteristic = ch;
+        trace(`media Report bound by request: [${ch.name}]\n`);
         if (!_bound) {
           _bound = true;
           _params.onKeyboardBound(this);
@@ -66,8 +76,9 @@ export function createKeyboardService(_params: {
       switch (ch.name) {
         case 'media_input_report':
           trace('media_input_report is still not implemented\n');
-          return;
+          return _keyboard.mediaReport;
         case 'keyboard_input_report':
+          trace('keyboard_input_report is still not implemented\n');
           return _keyboard.report;
         case 'control_point':
           return [0, 0];
@@ -92,7 +103,11 @@ export function createKeyboardService(_params: {
      * notifyMedia
      */
     public notifyMedia() {
-      trace('Not Implemented Yet: notifyMedia\n');
+      if (this.mediaReportCharacteristic) {
+        this.notifyValue(this.mediaReportCharacteristic, _keyboard.mediaReport);
+      } else {
+        trace(`not connected ${_keyboard.mediaReport}\n`);
+      }
     }
 
     /**
@@ -119,6 +134,17 @@ export function createKeyboardService(_params: {
     public onKeyTap(options: Options) {
       this.onKeyDown(options);
       this.onKeyUp();
+    }
+
+    /**
+     * onMediaDown
+     */
+    public onMediaSend(code: number) {
+      trace(`Sending Media Key Code: ${code}\n`);
+      _keyboard.onMediaDown(code);
+      this.notifyMedia();
+      _keyboard.onMediaUp();
+      this.notifyMedia();
     }
 
   }

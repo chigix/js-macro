@@ -10,7 +10,7 @@ import {
   modifierBits, attemptModifyLayerChange,
   attemptCtrlModify, attemptShiftModify, attemptGuiModify,
   dashDots2Char, attemptStoreDashdots, attemptCommitHistory,
-  attemptArrowPageKey,
+  attemptArrowPageKey, attemptMediaKey,
 } from "./morse-util";
 import { Options } from "./hidkeyboard";
 
@@ -24,6 +24,9 @@ export function createMorseContext() {
       return;
     },
     releaseKey: function (options: Options) {
+      return;
+    },
+    mediaKey: function (code: number) {
       return;
     },
     onForceHistoryEmpty: function () {
@@ -40,38 +43,46 @@ export function createMorseContext() {
         // attemptOccupyKeyLayerChange skipped here will only have ctrl,shift conflict
         // This conflict will be fixed by attemptKeyLayerChange.
         attemptModifyLayerChange(history);
-        attemptCtrlModify(history) || attemptShiftModify(history);
+        attemptCtrlModify(history) || attemptShiftModify(history)
+          || attemptMediaKey(history, () => _cbs.mediaKey(0x04)); // Media Mute
         return true;
       },
       1: () => attemptOccupyKeyLayerChange(history)
         || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' }))
-        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'pageUp' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'pageUp' })),
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'pageUp' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'pageUp' }))
+        || attemptMediaKey(history, () => _cbs.mediaKey(0x08)), // #Media Previous
       2: () => attemptOccupyForceEmpty(history)
         || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' }))
         || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' }))
-        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'upArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'upArrow' })),
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'upArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'upArrow' }))
+        || attemptMediaKey(history, () => _cbs.mediaKey(0x80)), // No Effect, maybe eject
       3: () => attemptOccupyForceEmpty(history)
         || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' }))
-        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'pageDown' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'pageDown' })),
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'pageDown' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'pageDown' }))
+        || attemptMediaKey(history, () => _cbs.mediaKey(0x02)), // # Media Volume -
       4: () => {
         // attemptOccupyKeyLayerChange skipped here will only have shift,gui conflict
         // This conflict will be fixed by attemptKeyLayerChange.
         attemptModifyLayerChange(history);
-        attemptShiftModify(history) || attemptGuiModify(history);
+        attemptShiftModify(history) || attemptGuiModify(history)
+          || attemptMediaKey(history, () => _cbs.mediaKey(0x20)); // Media Play (Unknown)
         return true;
       },
       5: () => attemptOccupyKeyLayerChange(history)
         || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: ' ' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: ' ' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse())
-        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'leftArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'leftArrow' })),
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'leftArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'leftArrow' }))
+        || attemptMediaKey(history, () => _cbs.mediaKey(0x10)), // #Media Next
       6: () => attemptOccupyForceEmpty(history)
         || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: ' ' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: ' ' }))
         || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse())
-        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'downArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'downArrow' })),
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'downArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'downArrow' }))
+        || attemptMediaKey(history, () => _cbs.mediaKey(0x40)), // #Media Play / Pause
       7: () => attemptOccupyForceEmpty(history)
         || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' }))
-        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'rightArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'rightArrow' })),
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'rightArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'rightArrow' }))
+        || attemptMediaKey(history, () => _cbs.mediaKey(0x01)), // # Media Volume +
     } as { [key: number]: () => boolean };
 
     private attemptsOnKeyUp = {
@@ -135,6 +146,9 @@ export function createMorseContext() {
     }
     public onKeyReleased(callback: (options: Options) => void) {
       _cbs.releaseKey = callback;
+    }
+    public onMediaKey(callback: (code: number) => void) {
+      _cbs.mediaKey = callback;
     }
 
     public onForceHistoryEmpty(callback: () => void) {

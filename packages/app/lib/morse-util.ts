@@ -253,6 +253,9 @@ export function attemptEnterKey(ctx: KeyCountBuffer, enterKey: () => void, enter
 }
 
 export function attemptCtrlModify(ctx: KeyCountBuffer) {
+  if (ctx.keyLayer === KeyLayer.MEDIA) {
+    return false;
+  }
   if (ctx.modifyLayer === ModifyLayer.SH_GUI) {
     return false;
   }
@@ -267,6 +270,9 @@ export function attemptCtrlModify(ctx: KeyCountBuffer) {
 }
 
 export function attemptShiftModify(ctx: KeyCountBuffer) {
+  if (ctx.keyLayer === KeyLayer.MEDIA) {
+    return false;
+  }
   if (ctx.modifyLayer === ModifyLayer.CT_SH) {
     if ((ctx.keyPushed & 0b10001000) === 0b00001000) {
       ctx.keyLocks.shift = true;
@@ -292,6 +298,9 @@ export function attemptShiftModify(ctx: KeyCountBuffer) {
 }
 
 export function attemptGuiModify(ctx: KeyCountBuffer) {
+  if (ctx.keyLayer === KeyLayer.MEDIA) {
+    return false;
+  }
   if (ctx.modifyLayer === ModifyLayer.CT_SH) {
     return false;
   }
@@ -332,6 +341,14 @@ export function attemptArrowPageKey(ctx: KeyCountBuffer, holdKey: () => void, re
     releaseKey();
     return false;
   }, 50);
+  return true;
+}
+
+export function attemptMediaKey(ctx: KeyCountBuffer, key: () => void) {
+  if (ctx.keyLayer !== KeyLayer.MEDIA) {
+    return false;
+  }
+  key();
   return true;
 }
 

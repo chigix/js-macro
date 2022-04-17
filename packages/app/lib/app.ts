@@ -26,6 +26,7 @@ function bootstrap() {
   morseCtx.onKeySend(o => kbService.onKeyTap(o));
   morseCtx.onKeyPressing(o => kbService.onKeyDown(o));
   morseCtx.onKeyReleased(o => kbService.onKeyUp());
+  morseCtx.onMediaKey(o => kbService.onMediaSend(o));
   morseCtx.onForceHistoryEmpty(() => {
     pinCtx.led.write(0);
   });
