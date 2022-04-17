@@ -305,6 +305,36 @@ export function attemptGuiModify(ctx: KeyCountBuffer) {
   return true;
 }
 
+export function attemptArrowPageKey(ctx: KeyCountBuffer, holdKey: () => void, releaseKey: () => void) {
+  if (ctx.keyLayer !== KeyLayer.ARROWS) {
+    return false;
+  }
+  let flagSnapshot: number | undefined = ctx.changeFlag;
+  let initTimer: Timer | undefined = Timer.set(() => {
+    if (initTimer) {
+      Timer.clear(initTimer);
+    }
+    initTimer = undefined;
+    if (ctx.changeFlag !== flagSnapshot) {
+      return false;
+    }
+    holdKey();
+  });
+  let repeatTimer: Timer | undefined = Timer.repeat(() => {
+    if (ctx.changeFlag === flagSnapshot) {
+      return true;
+    }
+    if (repeatTimer) {
+      Timer.clear(repeatTimer);
+    }
+    repeatTimer = undefined;
+    flagSnapshot = undefined;
+    releaseKey();
+    return false;
+  }, 50);
+  return true;
+}
+
 export function attemptStoreDashdots(ctx: KeyCountBuffer) {
   if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;

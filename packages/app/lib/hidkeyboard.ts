@@ -20,6 +20,12 @@ const HID_SPACE = 0x2C;
 const HID_BACKSPACE = 0x2A;
 const HID_OS = 0xE7;
 const HID_ESC = 0x29;
+const HID_PAGE_UP = 0x4B;
+const HID_PAGE_DOWN = 0x4E;
+const HID_RIGHT_ARROW = 0x4F;
+const HID_LEFT_ARROW = 0x50;
+const HID_DOWN_ARROW = 0x51;
+const HID_UP_ARROW = 0x52;
 
 const HID_BT = 0x35;
 const HID_MINUS = 0x2D;
@@ -127,6 +133,18 @@ function getHIDCode(character: string) {
     value = HID_OS;
   } else if (character === 'esc') { // ESC Key
     value = HID_ESC;
+  } else if (character === 'pageUp') { // ESC Key
+    value = HID_PAGE_UP;
+  } else if (character === 'pageDown') { // ESC Key
+    value = HID_PAGE_DOWN;
+  } else if (character === 'leftArrow') { // ESC Key
+    value = HID_LEFT_ARROW;
+  } else if (character === 'rightArrow') { // ESC Key
+    value = HID_RIGHT_ARROW;
+  } else if (character === 'upArrow') { // ESC Key
+    value = HID_UP_ARROW;
+  } else if (character === 'downArrow') { // ESC Key
+    value = HID_DOWN_ARROW;
   } else if (value <= 122 && value >= 97) { // Letters
     value -= ASCII_a;
     value += HID_A;

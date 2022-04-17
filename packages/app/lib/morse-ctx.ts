@@ -10,6 +10,7 @@ import {
   modifierBits, attemptModifyLayerChange,
   attemptCtrlModify, attemptShiftModify, attemptGuiModify,
   dashDots2Char, attemptStoreDashdots, attemptCommitHistory,
+  attemptArrowPageKey,
 } from "./morse-util";
 import { Options } from "./hidkeyboard";
 
@@ -43,12 +44,15 @@ export function createMorseContext() {
         return true;
       },
       1: () => attemptOccupyKeyLayerChange(history)
-        || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' })),
+        || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' }))
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'pageUp' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'pageUp' })),
       2: () => attemptOccupyForceEmpty(history)
         || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' }))
-        || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' })),
+        || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' }))
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'upArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'upArrow' })),
       3: () => attemptOccupyForceEmpty(history)
-        || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' })),
+        || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' }))
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'pageDown' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'pageDown' })),
       4: () => {
         // attemptOccupyKeyLayerChange skipped here will only have shift,gui conflict
         // This conflict will be fixed by attemptKeyLayerChange.
@@ -58,13 +62,16 @@ export function createMorseContext() {
       },
       5: () => attemptOccupyKeyLayerChange(history)
         || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: ' ' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: ' ' }))
-        || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
+        || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse())
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'leftArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'leftArrow' })),
       6: () => attemptOccupyForceEmpty(history)
         || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: ' ' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: ' ' }))
         || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' }))
-        || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
+        || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse())
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'downArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'downArrow' })),
       7: () => attemptOccupyForceEmpty(history)
-        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' })),
+        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' }))
+        || attemptArrowPageKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: 'rightArrow' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: 'rightArrow' })),
     } as { [key: number]: () => boolean };
 
     private attemptsOnKeyUp = {
