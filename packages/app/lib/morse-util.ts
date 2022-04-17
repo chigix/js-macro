@@ -51,6 +51,7 @@ function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
     return false;
   }
   if (ctx.dashDots.length > 0) {
+    trace(`${ctx.changeFlag} -> sebtKeyTemplate Rejected: dashdots is not empty\n`);
     return false;
   }
   trace(`${ctx.changeFlag} -> Keypair: ${keyExpect.toString(2)}\n`);
@@ -90,7 +91,7 @@ function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
 }
 
 export function attemptOccupySebtRelease(ctx: KeyCountBuffer) {
-  let _keySeq: number[] | undefined = ctx.keySequence;
+  let _keySeq: Uint8Array | undefined = ctx.keySequence.recentThumb();
   let prevPatternExpect: number | undefined = 0;
   for (let index = _keySeq.length - 3; index > _keySeq.length - 5; index--) {
     if (_keySeq[index] < 10) {
@@ -125,8 +126,10 @@ export function attemptOccupySebtRelease(ctx: KeyCountBuffer) {
 
 export function attemptOccupyForceEmpty(ctx: KeyCountBuffer) {
   if (FORCE_EMPTY_KEY_PATTERNS.indexOf((ctx.keyPushed & 0b01110111)) > -1) {
+    trace(`${ctx.changeFlag} -> attemptOccupyForceEmpty: TRUE\n`);
     return true;
   }
+  trace(`${ctx.changeFlag} -> attemptOccupyForceEmpty: FALSE\n`);
   return false;
 }
 
@@ -144,7 +147,7 @@ export function attemptCommitHistory(ctx: KeyCountBuffer, commit: () => void) {
   commit();
   // resetKeyCountHistory is forbidden, because key layer should be kept.
   ctx.dashDots.resetBuffer();
-  ctx.emptyKeySequences();
+  ctx.keySequence.resetBuffer();
   trace(`${ctx.changeFlag} -> Commit History!`, ctx.toString(), '\n');
   return true;
 }
@@ -168,17 +171,18 @@ export function attemptStoreDashdots(ctx: KeyCountBuffer) {
   if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;
   }
-  let len: number | undefined = ctx.keySequence.length;
-  let shouldBeUpKey: number | undefined = ctx.keySequence[len - 1];
-  let shouldBeDownKey: number | undefined = ctx.keySequence[len - 2];
-  if (shouldBeUpKey - shouldBeDownKey === 10) {
+  let recent: Uint8Array | undefined = ctx.keySequence.recentThumb()
+    .slice(-2);
+  if (recent.length < 2) {
+    recent = undefined;
+    return false;
+  }
+  if (recent[1] - recent[0] === 10) {
     trace(`${ctx.changeFlag} -> Dashdots Stored\n`);
-    dashDots2NumArr[shouldBeDownKey](ctx);
+    dashDots2NumArr[recent[0]](ctx);
     trace(`${ctx.changeFlag} -> Dashdots Stored`, ctx.toString(), '\n');
   }
-  len = undefined;
-  shouldBeUpKey = undefined;
-  shouldBeDownKey = undefined;
+  recent = undefined;
   return true;
 }
 

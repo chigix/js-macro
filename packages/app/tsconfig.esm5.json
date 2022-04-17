@@ -6,5 +6,6 @@
     "target": "ES2015",
     "outDir": "../../dist/app",
     "lib": ["ES2020"],
+    "types": []
   },
 }

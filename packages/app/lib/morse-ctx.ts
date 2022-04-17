@@ -124,7 +124,7 @@ export function createMorseContext() {
     }
 
     private attemptForceHistoryEmpty() {
-      let _keySeq: number[] | undefined = history.keySequence;
+      let _keySeq: Uint8Array | undefined = history.keySequence.recentThumb();
       if (history.keyPushed > 0) {
         return false;
       }

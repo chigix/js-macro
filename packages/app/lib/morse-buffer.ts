@@ -1,5 +1,77 @@
 import { KeyLayer, ModifyLayer, KeyName, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
 
+class KeySequenceBuffer {
+
+  /**
+   * keys: allocates[0-49];
+   * length: allocates[50].
+   */
+  private allocates: Uint8Array;
+
+  constructor() {
+    this.allocates = new Uint8Array(51);
+    this.allocates.fill(0);
+  }
+
+  public get length(): number {
+    return this.allocates[50];
+  }
+
+  /**
+   * push
+   */
+  public push(key: KeyName) {
+    this.allocates[(this.allocates[50]++) % 50] = key;
+  }
+
+  /**
+   * latestFrames
+   */
+  public frameFromLast(...sizeFromLast: number[]) {
+    let resultFrame = 0;
+    let lastIndex = this.length % 50 - 1;
+    return sizeFromLast.map(size => {
+      resultFrame = this.allocates[lastIndex] < 10 ? 0 : 255;
+      for (let index = 0; index < size; index++) {
+        if (lastIndex < 0) {
+          return null;
+        }
+        if (this.allocates[lastIndex] < 10) {
+          resultFrame |= PUSH_KEY[this.allocates[lastIndex]];
+        } else {
+          resultFrame &= RELEASE_KEY[this.allocates[lastIndex] - 10];
+        }
+        lastIndex--;
+        if (lastIndex < 0 && this.length > 49) {
+          lastIndex = 49;
+        }
+      }
+      return resultFrame;
+    });
+  }
+
+  /**
+   * resetBuffer
+   */
+  public resetBuffer() {
+    this.allocates.fill(0);
+  }
+
+  public recentThumb() {
+    if (this.length % 50 > 9) {
+      return this.allocates.subarray(this.length % 50 - 9, this.length % 50);
+    } else if (this.length > 49) {
+      const history = new Uint8Array(9);
+      history.set(this.allocates.subarray(50 - (9 - this.length % 50), 50), 0);
+      history.set(this.allocates.subarray(0, this.length % 50), 9 - this.length % 50);
+      return history;
+    } else {
+      return this.allocates.slice(0, this.length);
+    }
+  }
+
+}
+
 class DashDotsBuffer {
   constructor(
     private allocates: Uint8Array,
@@ -11,7 +83,6 @@ class DashDotsBuffer {
   public get length(): number {
     return this.allocates[5];
   }
-
 
   private set length(v: number) {
     this.allocates[5] = v;
@@ -25,8 +96,6 @@ class DashDotsBuffer {
       return;
     }
     this.allocates[6 + this.length++] = dashdot;
-    trace(`dashdots push ${this.length} : ${dashdot} \n`);
-    trace(`dashdots push ${this.toString()} \n`);
   }
 
   /**
@@ -111,27 +180,19 @@ class KeyLocksBuffer {
 }
 
 export class KeyCountBuffer {
-  private _keySequence: number[];
   private _allocates = new Uint8Array(16);
   public readonly keyLocks: KeyLocksBuffer;
-  private readonly _dashDots: DashDotsBuffer;
+  public readonly dashDots: DashDotsBuffer;
+  public readonly keySequence: KeySequenceBuffer;
 
   constructor() {
-    this._keySequence = [];
     this._allocates[0] = 0; // changeFlag
     this._allocates[1] = ModifyLayer.CT_SH;
     this._allocates[2] = KeyLayer.DASHDOTS;
     this._allocates[3] = 0b00000000; // Key Pushed
     this.keyLocks = new KeyLocksBuffer(this._allocates); // keyLocks 4
-    this._dashDots = new DashDotsBuffer(this._allocates); // dashDots 5, 6-15
-  }
-
-  public get dashDots(): DashDotsBuffer {
-    return this._dashDots;
-  }
-
-  public get keySequence(): number[] {
-    return this._keySequence;
+    this.dashDots = new DashDotsBuffer(this._allocates); // dashDots 5, 6-15
+    this.keySequence = new KeySequenceBuffer();
   }
 
   public get keyPushed(): number {
@@ -170,21 +231,13 @@ export class KeyCountBuffer {
    * resetAll
    */
   public resetAll() {
-    this._keySequence = [];
     this._allocates[0] = 0;
     this._allocates[1] = ModifyLayer.CT_SH;
     this._allocates[2] = KeyLayer.DASHDOTS;
     this._allocates[3] = 0;
     this.keyLocks.resetBuffer();
     this.dashDots.resetBuffer();
-  }
-
-  /**
-   * emptyKeySequences
-   */
-  public emptyKeySequences() {
-    this._keySequence = [];
-    this._allocates[3] = 0;
+    this.keySequence.resetBuffer();
   }
 
   /**
@@ -207,7 +260,7 @@ export class KeyCountBuffer {
   public toString() {
     return JSON.stringify({
       dashDots: this.dashDots.toString(),
-      keySequence: this.keySequence,
+      keySequence: this.keySequence.recentThumb().join(),
       changeFlag: this._allocates[0],
       modifyLayer: this._allocates[1],
       keyLayer: this._allocates[2],
