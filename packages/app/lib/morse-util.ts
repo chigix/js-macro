@@ -19,6 +19,12 @@ const SEBT_KEY_PATTERNS = [
 ];
 Object.freeze(SEBT_KEY_PATTERNS);
 
+const KEYLAYER_CHANGE_STRICT_PATTERN = 0b11001100;
+const KEYLAYER_CHANGE_PATTERNS = [
+  KEYLAYER_CHANGE_STRICT_PATTERN, 0b01001100, 0b10001100, 0b11000100, 0b11001000,
+];
+Object.freeze(KEYLAYER_CHANGE_PATTERNS);
+
 const MODIFYLAYER_CHANGE_PATTERN = 0b10001000;
 Object.freeze(MODIFYLAYER_CHANGE_PATTERN);
 
@@ -85,13 +91,13 @@ function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
       && (ctx.keyPushed & 0b01110111) === keyExpect) {
       return true;
     }
-      if (repeatTimer) {
-        Timer.clear(repeatTimer);
-      }
-      repeatTimer = undefined;
-      flagSnapshot = undefined;
-        releaseKey();
-      return false;
+    if (repeatTimer) {
+      Timer.clear(repeatTimer);
+    }
+    repeatTimer = undefined;
+    flagSnapshot = undefined;
+    releaseKey();
+    return false;
   }, 50);
   return true;
 }
@@ -102,18 +108,18 @@ export function attemptOccupySebtRelease(ctx: KeyCountBuffer) {
   if (ctx.keyPushed === 0) {
     // 2 Keys are perfectly released.
     frames = ctx.keySequence.frameFromLast(2, 2);
-    } else {
+  } else {
     // Still one key is not released.
     frames = ctx.keySequence.frameFromLast(1, 2);
-    }
+  }
   if (frames[1] === null) {
     return false;
   }
   trace(`${ctx.changeFlag} -> attempt Sebt Release 1\n`);
   if (SEBT_KEY_PATTERNS.indexOf(frames[1]) < 0) {
     frames = undefined;
-      return false;
-    }
+    return false;
+  }
   trace(`${ctx.changeFlag} -> attempt Sebt Release 2\n`);
   if (frames[0] === null) {
     return false;
@@ -157,6 +163,41 @@ export function attemptForceEmpty(ctx: KeyCountBuffer, callback: () => void) {
   callback();
   return true;
 }
+
+export function attemptOccupyKeyLayerChange(ctx: KeyCountBuffer) {
+  if (KEYLAYER_CHANGE_PATTERNS.indexOf((ctx.keyPushed & 255)) > -1) {
+    return true;
+  }
+  return false;
+}
+
+export function attemptKeyLayerChange(ctx: KeyCountBuffer) {
+  let releasedCount: number | undefined =
+    ctx.keySequence.recentThumb().slice().reverse().findIndex(v => v < 10);
+  if (releasedCount < 0) {
+    releasedCount = undefined;
+    return false;
+  }
+  let frames: Array<number | null> | undefined = ctx.keySequence.frameFromLast(releasedCount, 4);
+  if (frames && frames[1] !== KEYLAYER_CHANGE_STRICT_PATTERN) {
+    releasedCount = undefined;
+    frames = undefined;
+    return false;
+  }
+  if (releasedCount < 4) {
+    releasedCount = undefined;
+    frames = undefined;
+    return true;
+  }
+  frames = undefined;
+  releasedCount = undefined;
+  ctx.keyLayer = (ctx.keyLayer + 1) % 4;
+  // Because this key combination conflicts with ctrl, shift, gui.
+  ctx.keyLocks.resetBuffer();
+  trace(`${ctx.changeFlag} -> KeyLayer Changed`);
+  return true;
+}
+
 export function attemptModifyLayerChange(ctx: KeyCountBuffer) {
   trace(`${ctx.changeFlag} -> attemptModifyLayer Change ${ctx.keyPushed}\n`);
   if (ctx.keyPushed !== MODIFYLAYER_CHANGE_PATTERN) {

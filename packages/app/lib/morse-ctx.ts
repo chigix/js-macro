@@ -4,6 +4,7 @@ import {
   attemptSpaceKey, attemptBackspaceKey, attemptEnterKey, attemptTabKey,
   attemptOccupySebtRelease,
   attemptOccupyForceEmpty, attemptForceEmpty,
+  attemptOccupyKeyLayerChange, attemptKeyLayerChange,
 } from "./morse-util";
 import {
   modifierBits, attemptModifyLayerChange,
@@ -35,22 +36,28 @@ export function createMorseContext() {
 
     private attemptsOnKeyDown = {
       0: () => {
+        // attemptOccupyKeyLayerChange skipped here will only have ctrl,shift conflict
+        // This conflict will be fixed by attemptKeyLayerChange.
         attemptModifyLayerChange(history);
         attemptCtrlModify(history) || attemptShiftModify(history);
         return true;
       },
-      1: () => attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' })),
+      1: () => attemptOccupyKeyLayerChange(history)
+        || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' })),
       2: () => attemptOccupyForceEmpty(history)
         || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' }))
         || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' })),
       3: () => attemptOccupyForceEmpty(history)
         || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' })),
       4: () => {
+        // attemptOccupyKeyLayerChange skipped here will only have shift,gui conflict
+        // This conflict will be fixed by attemptKeyLayerChange.
         attemptModifyLayerChange(history);
         attemptShiftModify(history) || attemptGuiModify(history);
         return true;
       },
-      5: () => attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
+      5: () => attemptOccupyKeyLayerChange(history)
+        || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
       6: () => attemptOccupyForceEmpty(history)
         || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
@@ -61,8 +68,10 @@ export function createMorseContext() {
     } as { [key: number]: () => boolean };
 
     private attemptsOnKeyUp = {
-      0: () => attemptCtrlModify(history) || attemptShiftModify(history),
-      1: () => attemptOccupySebtRelease(history)
+      0: () => attemptKeyLayerChange(history)
+        || attemptCtrlModify(history) || attemptShiftModify(history),
+      1: () => attemptKeyLayerChange(history)
+        || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       2: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
@@ -70,8 +79,10 @@ export function createMorseContext() {
       3: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
-      4: () => attemptShiftModify(history) || attemptGuiModify(history),
-      5: () => attemptOccupySebtRelease(history)
+      4: () => attemptKeyLayerChange(history)
+        || attemptShiftModify(history) || attemptGuiModify(history),
+      5: () => attemptKeyLayerChange(history)
+        || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       6: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
