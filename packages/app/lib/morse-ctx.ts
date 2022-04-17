@@ -57,14 +57,14 @@ export function createMorseContext() {
         return true;
       },
       5: () => attemptOccupyKeyLayerChange(history)
-        || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
+        || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: ' ' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: ' ' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
       6: () => attemptOccupyForceEmpty(history)
-        || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
-        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: 0, character: '\r' }), () => _cbs.releaseKey({ modifiers: 0, character: '\r' }))
+        || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: ' ' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: ' ' }))
+        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
       7: () => attemptOccupyForceEmpty(history)
-        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: 0, character: '\r' }), () => _cbs.releaseKey({ modifiers: 0, character: '\r' })),
+        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\r' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\r' })),
     } as { [key: number]: () => boolean };
 
     private attemptsOnKeyUp = {
