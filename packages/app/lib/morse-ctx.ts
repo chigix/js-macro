@@ -1,15 +1,16 @@
-import { KeyName, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
+import { KeyName } from "./morse-consts";
 import { KeyCountBuffer } from "./morse-buffer";
 import {
   attemptSpaceKey, attemptBackspaceKey, attemptEnterKey, attemptTabKey,
-  attemptOccupySebtRelease, attemptOccupyForceEmpty,
+  attemptOccupySebtRelease,
+  attemptOccupyForceEmpty, attemptForceEmpty,
 } from "./morse-util";
 import {
   modifierBits, attemptModifyLayerChange,
   attemptCtrlModify, attemptShiftModify, attemptGuiModify,
   dashDots2Char, attemptStoreDashdots, attemptCommitHistory,
 } from "./morse-util";
-import { Options, HID_MODIFIERS } from "./hidkeyboard";
+import { Options } from "./hidkeyboard";
 
 export function createMorseContext() {
 
@@ -63,19 +64,19 @@ export function createMorseContext() {
       0: () => attemptCtrlModify(history) || attemptShiftModify(history),
       1: () => attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
-      2: () => this.attemptForceHistoryEmpty()
+      2: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
-      3: () => this.attemptForceHistoryEmpty()
+      3: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       4: () => attemptShiftModify(history) || attemptGuiModify(history),
       5: () => attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
-      6: () => this.attemptForceHistoryEmpty()
+      6: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
-      7: () => this.attemptForceHistoryEmpty()
+      7: () => attemptForceEmpty(history, _cbs.onForceHistoryEmpty)
         || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
     } as { [key: number]: () => boolean };
@@ -130,49 +131,6 @@ export function createMorseContext() {
         return;
       }
       _cbs.sendKey({ modifiers: modifierBits(history), character });
-    }
-
-    private attemptForceHistoryEmpty() {
-      let _keySeq: Uint8Array | undefined = history.keySequence.recentThumb();
-      if (history.keyPushed > 0) {
-        return false;
-      }
-      if (_keySeq.length < 8) {
-        _keySeq = undefined;
-        return false;
-      }
-      let prevPatternExpect: number | undefined = 0;
-      for (let index = _keySeq.length - 5; index > _keySeq.length - 9; index--) {
-        if (_keySeq[index] < 10) {
-          prevPatternExpect |= PUSH_KEY[_keySeq[index]];
-        } else {
-          _keySeq = undefined;
-          return false;
-        }
-      }
-      if (prevPatternExpect !== 0b00110011) {
-        _keySeq = undefined;
-        return false;
-      }
-      prevPatternExpect = undefined;
-      let lastPatternExpect: number | undefined = 255;
-      for (let index = _keySeq.length - 1; index > _keySeq.length - 5; index--) {
-        if (_keySeq[index] >= 10) {
-          lastPatternExpect &= RELEASE_KEY[_keySeq[index] - 10];
-        } else {
-          _keySeq = undefined;
-          return false;
-        }
-      }
-      _keySeq = undefined;
-      if (lastPatternExpect !== 0b11001100) {
-        return false;
-      }
-      lastPatternExpect = undefined;
-      history.resetAll();
-      _cbs.onForceHistoryEmpty();
-      trace(`${history.changeFlag} -> Force History Empty!`, history.toString(), '\n');
-      return true;
     }
 
   }

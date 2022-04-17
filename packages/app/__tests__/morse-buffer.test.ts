@@ -22,6 +22,17 @@ describe('Given KeyCountBuffer', () => {
     expect(history.dashDots.toString()).toBe(dashdots.join(''));
   });
 
+  test('When 4 keys are pushed', () => {
+    const sequence = [4, 5, 6, 7, 16, 15, 17, 14,];
+    sequence.forEach(v => history.keySequence.push(v));
+    expect(
+      history.keySequence.recentThumb()
+    ).toEqual(Uint8Array.from(sequence));
+    expect(
+      history.keySequence.frameFromLast(0, 4)
+    ).toEqual([255, 0b11110000]);
+  });
+
   test('When 9 keys are tapped', () => {
     const sequence = [4, 5, 6, 7, 16, 15, 17, 14, 4,];
     sequence.forEach(v => history.keySequence.push(v));
@@ -61,7 +72,8 @@ describe('Given KeyCountBuffer', () => {
       history.keySequence.recentThumb()
     ).toEqual(Uint8Array.from(sequenceEnding));
     expect(
-      history.keySequence.frameFromLast(3, 2, 2, 2)
-    ).toEqual([0b01100010, 0b11111100, 0b00000011, 0b11001111]);
+      history.keySequence.frameFromLast(0, 3, 2, 2, 2)
+    ).toEqual([0, 0b01100010, 0b11111100, 0b00000011, 0b11001111]);
   });
+
 });

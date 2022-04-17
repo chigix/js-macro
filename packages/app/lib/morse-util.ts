@@ -8,8 +8,9 @@ import { KeyCountBuffer } from "./morse-buffer";
  */
 type KeyMapBuffer = number;
 
+const FORCE_EMPTY_KEY_STRICT_PATTERN = 0b00110011;
 const FORCE_EMPTY_KEY_PATTERNS = [
-  0b00110011, 0b00110010, 0b00110001, 0b00100011, 0b00010011,
+  FORCE_EMPTY_KEY_STRICT_PATTERN, 0b00110010, 0b00110001, 0b00100011, 0b00010011,
 ];
 Object.freeze(FORCE_EMPTY_KEY_PATTERNS);
 
@@ -131,6 +132,31 @@ export function attemptOccupyForceEmpty(ctx: KeyCountBuffer) {
   return false;
 }
 
+export function attemptForceEmpty(ctx: KeyCountBuffer, callback: () => void) {
+  let releasedCount: number | undefined =
+    ctx.keySequence.recentThumb().slice().reverse().findIndex(v => v < 10);
+  if (releasedCount < 0) {
+    releasedCount = undefined;
+    return false;
+  }
+  let frames: Array<number | null> | undefined = ctx.keySequence.frameFromLast(releasedCount, 4);
+  if (frames && frames[1] !== FORCE_EMPTY_KEY_STRICT_PATTERN) {
+    releasedCount = undefined;
+    frames = undefined;
+    return false;
+  }
+  if (releasedCount < 4) {
+    releasedCount = undefined;
+    frames = undefined;
+    return true;
+  }
+  releasedCount = undefined;
+  frames = undefined;
+  ctx.resetAll();
+  trace(`${ctx.changeFlag} -> Force History Empty!`, ctx.toString(), '\n');
+  callback();
+  return true;
+}
 export function attemptModifyLayerChange(ctx: KeyCountBuffer) {
   trace(`${ctx.changeFlag} -> attemptModifyLayer Change ${ctx.keyPushed}\n`);
   if (ctx.keyPushed !== MODIFYLAYER_CHANGE_PATTERN) {
