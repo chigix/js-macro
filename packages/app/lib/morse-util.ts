@@ -1,5 +1,6 @@
 import Timer from "timer";
-import { KeyLayer, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
+import { HID_MODIFIERS } from "./hidkeyboard";
+import { KeyLayer, ModifyLayer } from "./morse-consts";
 import { KeyCountBuffer } from "./morse-buffer";
 
 /**
@@ -17,29 +18,33 @@ const SEBT_KEY_PATTERNS = [
 ];
 Object.freeze(SEBT_KEY_PATTERNS);
 
-const SEBT_KEY_REVERSE = SEBT_KEY_PATTERNS.map(p => ~p + 256);
-Object.freeze(SEBT_KEY_REVERSE);
+const MODIFYLAYER_CHANGE_PATTERN = 0b10001000;
+Object.freeze(MODIFYLAYER_CHANGE_PATTERN);
+
+const MODIFYLAYER_CHANGE_REVERSE = ~MODIFYLAYER_CHANGE_PATTERN + 256;
+Object.freeze(MODIFYLAYER_CHANGE_REVERSE);
+
 
 const dashDots2NumArr: {
   [key: string]: (ctx: KeyCountBuffer) => void,
 } = {
-  '1': (ctx: KeyCountBuffer) => ctx.dashDots.push(0),
-  '5': (ctx: KeyCountBuffer) => ctx.dashDots.push(1),
+  '1': (ctx: KeyCountBuffer) => ctx.dashDots.push(1),
+  '5': (ctx: KeyCountBuffer) => ctx.dashDots.push(0),
   '3': (ctx: KeyCountBuffer) => {
-    ctx.dashDots.push(0);
-    ctx.dashDots.push(0);
+    ctx.dashDots.push(1);
+    ctx.dashDots.push(1);
   },
   '2': (ctx: KeyCountBuffer) => {
-    ctx.dashDots.push(0);
     ctx.dashDots.push(1);
+    ctx.dashDots.push(0);
   },
   '6': (ctx: KeyCountBuffer) => {
-    ctx.dashDots.push(1);
     ctx.dashDots.push(0);
+    ctx.dashDots.push(1);
   },
   '7': (ctx: KeyCountBuffer) => {
-    ctx.dashDots.push(1);
-    ctx.dashDots.push(1);
+    ctx.dashDots.push(0);
+    ctx.dashDots.push(0);
   },
 };
 Object.freeze(dashDots2NumArr);
@@ -91,36 +96,29 @@ function sebtKeyTemplate(ctx: KeyCountBuffer, keyExpect: KeyMapBuffer,
 }
 
 export function attemptOccupySebtRelease(ctx: KeyCountBuffer) {
-  let _keySeq: Uint8Array | undefined = ctx.keySequence.recentThumb();
-  let prevPatternExpect: number | undefined = 0;
-  for (let index = _keySeq.length - 3; index > _keySeq.length - 5; index--) {
-    if (_keySeq[index] < 10) {
-      prevPatternExpect |= PUSH_KEY[_keySeq[index]];
+  let frames: Array<number | null> | undefined;
+  trace(`${ctx.changeFlag} -> attempt Sebt Release 0\n`);
+  if (ctx.keyPushed === 0) {
+    // 2 Keys are perfectly released.
+    frames = ctx.keySequence.frameFromLast(2, 2);
     } else {
-      _keySeq = undefined;
-      return false;
+    // Still one key is not released.
+    frames = ctx.keySequence.frameFromLast(1, 2);
     }
-  }
-  if (SEBT_KEY_PATTERNS.indexOf(prevPatternExpect & 0b01110111) === -1) {
-    _keySeq = undefined;
+  if (frames[1] === null) {
     return false;
   }
-  prevPatternExpect = undefined;
-  let lastPatternExpect: number | undefined = 255;
-  for (let index = _keySeq.length - 1; index > _keySeq.length - 3; index--) {
-    if (_keySeq[index] >= 10) {
-      lastPatternExpect &= RELEASE_KEY[_keySeq[index] - 10];
-    } else {
-      _keySeq = undefined;
+  trace(`${ctx.changeFlag} -> attempt Sebt Release 1\n`);
+  if (SEBT_KEY_PATTERNS.indexOf(frames[1]) < 0) {
+    frames = undefined;
       return false;
     }
-  }
-  _keySeq = undefined;
-  if (SEBT_KEY_REVERSE.indexOf(lastPatternExpect & 0b01110111) === -1) {
-    lastPatternExpect = undefined;
+  trace(`${ctx.changeFlag} -> attempt Sebt Release 2\n`);
+  if (frames[0] === null) {
     return false;
   }
-  lastPatternExpect = undefined;
+  trace(`${ctx.changeFlag} -> attempt Sebt Release: TRUE\n`);
+  frames = undefined;
   return true;
 }
 
@@ -133,6 +131,28 @@ export function attemptOccupyForceEmpty(ctx: KeyCountBuffer) {
   return false;
 }
 
+export function attemptModifyLayerChange(ctx: KeyCountBuffer) {
+  trace(`${ctx.changeFlag} -> attemptModifyLayer Change ${ctx.keyPushed}\n`);
+  if (ctx.keyPushed !== MODIFYLAYER_CHANGE_PATTERN) {
+    return false;
+  }
+  let waitingTimer: Timer | undefined = Timer.set(() => {
+    if (waitingTimer) {
+      Timer.clear(waitingTimer);
+    }
+    waitingTimer = undefined;
+    trace(`${ctx.changeFlag} -> attemptModifyLayer Change Waiting\n`);
+    if (ctx.keySequence.frameFromLast(2)[0] === MODIFYLAYER_CHANGE_REVERSE) {
+      trace(`${ctx.changeFlag} -> ModifyLayer Changed`);
+      ctx.modifyLayer = (ctx.modifyLayer + 1) % 3;
+      ctx.keyLocks.resetBuffer();
+    } else {
+      trace(`${ctx.changeFlag} -> ModifyLayer Change Timeout`);
+    }
+  }, 150);
+  return true;
+}
+
 export function attemptCommitHistory(ctx: KeyCountBuffer, commit: () => void) {
   if (ctx.dashDots.length < 1) {
     return false;
@@ -140,7 +160,7 @@ export function attemptCommitHistory(ctx: KeyCountBuffer, commit: () => void) {
   if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
     return false;
   }
-  if ((ctx.keyPushed & 0b01110111) !== 0b00000110) {
+  if (ctx.keySequence.frameFromLast(2)[0] !== 0b00000110) {
     return false;
   }
   trace(`${ctx.changeFlag} -> Commit History!\n`);
@@ -165,7 +185,58 @@ export function attemptEnterKey(ctx: KeyCountBuffer, enterKey: () => void, enter
   return sebtKeyTemplate(ctx, 0b00000011, enterKey, enterRelease);
 }
 
+export function attemptCtrlModify(ctx: KeyCountBuffer) {
+  if (ctx.modifyLayer === ModifyLayer.SH_GUI) {
+    return false;
+  }
+  if ((ctx.keyPushed & 0b10001000) === 0b10000000) {
+    // Empty
+  } else {
+    ctx.keyLocks.ctrl = false;
+    return true;
+  }
+  ctx.keyLocks.ctrl = true;
+  return true;
+}
 
+export function attemptShiftModify(ctx: KeyCountBuffer) {
+  if (ctx.modifyLayer === ModifyLayer.CT_SH) {
+    if ((ctx.keyPushed & 0b10001000) === 0b00001000) {
+      ctx.keyLocks.shift = true;
+      return true;
+    } else if (ctx.keySequence.frameFromLast(1)[0] === 0b11110111) {
+      ctx.keyLocks.shift = false;
+      return true;
+    } else {
+      return false;
+    }
+  } else if (ctx.modifyLayer === ModifyLayer.SH_GUI) {
+    if ((ctx.keyPushed & 0b10001000) === 0b10000000) {
+      ctx.keyLocks.shift = true;
+      return true;
+    } else if (ctx.keySequence.frameFromLast(1)[0] === 0b01111111) {
+      ctx.keyLocks.shift = false;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  return false;
+}
+
+export function attemptGuiModify(ctx: KeyCountBuffer) {
+  if (ctx.modifyLayer === ModifyLayer.CT_SH) {
+    return false;
+  }
+  if ((ctx.keyPushed & 0b10001000) === 0b00001000) {
+    // Empty
+  } else {
+    ctx.keyLocks.gui = false;
+    return true;
+  }
+  ctx.keyLocks.gui = true;
+  return true;
+}
 
 export function attemptStoreDashdots(ctx: KeyCountBuffer) {
   if (ctx.keyLayer !== KeyLayer.DASHDOTS) {
@@ -264,4 +335,18 @@ export function dashDots2Char(dashdots: string) {
     '110000': 'esc',
     '001001': 'prtscn',
   }[dashdots];
+}
+
+export function modifierBits(ctx: KeyCountBuffer) {
+  let modifiers: number | undefined = 0;
+  if (ctx.keyLocks.ctrl) {
+    modifiers |= HID_MODIFIERS.LEFT_CONTROL;
+  }
+  if (ctx.keyLocks.shift) {
+    modifiers |= HID_MODIFIERS.LEFT_SHIFT;
+  }
+  if (ctx.keyLocks.gui) {
+    modifiers |= HID_MODIFIERS.LEFT_GUI;
+  }
+  return modifiers;
 }

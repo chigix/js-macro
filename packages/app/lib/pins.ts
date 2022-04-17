@@ -27,7 +27,7 @@ export function initPinsCtx() {
       }
       // trace(`Key ${index} State Changed: ${previous} ==> ${current}\n`);
       previous = current;
-    }, 100);
+    }, 50);
   });
 
   return Object.freeze({

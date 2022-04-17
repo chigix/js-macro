@@ -98,11 +98,9 @@ export function createKeyboardService(_params: {
     /**
      * onKeyUp
      */
-    public onKeyUp(options: Options) {
-      if (_keyboard.canHandle(options)) {
-        _keyboard.onKeyUp(options);
-        this.notifyKeyboard();
-      }
+    public onKeyUp() {
+      _keyboard.onKeyUp();
+      this.notifyKeyboard();
     }
 
     /**
@@ -120,7 +118,7 @@ export function createKeyboardService(_params: {
      */
     public onKeyTap(options: Options) {
       this.onKeyDown(options);
-      this.onKeyUp(options);
+      this.onKeyUp();
     }
 
   }

@@ -195,6 +195,9 @@ export class KeyCountBuffer {
     this.keySequence = new KeySequenceBuffer();
   }
 
+  /**
+   * Key Pattern: e.g. 0b00110011
+   */
   public get keyPushed(): number {
     return this._allocates[3];
   }

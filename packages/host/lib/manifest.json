@@ -10,7 +10,12 @@
     "keys": {
       "available": 512
     },
-    "static": 65536
+    "chunk": {
+      "initial": 2560,
+      "incremental": 512
+    },
+    "stack": 256,
+    "static": 98304
   },
   "defines": {
     "XS_MODS": 1

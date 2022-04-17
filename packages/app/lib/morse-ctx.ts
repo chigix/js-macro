@@ -2,11 +2,12 @@ import { KeyName, PUSH_KEY, RELEASE_KEY } from "./morse-consts";
 import { KeyCountBuffer } from "./morse-buffer";
 import {
   attemptSpaceKey, attemptBackspaceKey, attemptEnterKey, attemptTabKey,
-  attemptOccupySebtRelease,
+  attemptOccupySebtRelease, attemptOccupyForceEmpty,
 } from "./morse-util";
 import {
-  dashDots2Char,
-  attemptStoreDashdots, attemptCommitHistory, attemptOccupyForceEmpty,
+  modifierBits, attemptModifyLayerChange,
+  attemptCtrlModify, attemptShiftModify, attemptGuiModify,
+  dashDots2Char, attemptStoreDashdots, attemptCommitHistory,
 } from "./morse-util";
 import { Options, HID_MODIFIERS } from "./hidkeyboard";
 
@@ -32,26 +33,34 @@ export function createMorseContext() {
   class MorseContext {
 
     private attemptsOnKeyDown = {
-      0: () => { _cbs.holdKey({ character: ' ' }); return true; },
-      1: () => attemptTabKey(history, () => _cbs.holdKey({ character: '\t' }), () => _cbs.releaseKey({ character: '\t' })),
+      0: () => {
+        attemptModifyLayerChange(history);
+        attemptCtrlModify(history) || attemptShiftModify(history);
+        return true;
+      },
+      1: () => attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' })),
       2: () => attemptOccupyForceEmpty(history)
-        || attemptTabKey(history, () => _cbs.holdKey({ character: '\t' }), () => _cbs.releaseKey({ character: '\t' }))
-        || attemptBackspaceKey(history, () => _cbs.holdKey({ character: '\b' }), () => _cbs.releaseKey({ character: '\b' })),
+        || attemptTabKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\t' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\t' }))
+        || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' })),
       3: () => attemptOccupyForceEmpty(history)
-        || attemptBackspaceKey(history, () => _cbs.holdKey({ character: '\b' }), () => _cbs.releaseKey({ character: '\b' })),
-      4: () => true,
-      5: () => attemptSpaceKey(history, () => _cbs.holdKey({ character: ' ' }), () => _cbs.releaseKey({ character: ' ' }))
+        || attemptBackspaceKey(history, () => _cbs.holdKey({ modifiers: modifierBits(history), character: '\b' }), () => _cbs.releaseKey({ modifiers: modifierBits(history), character: '\b' })),
+      4: () => {
+        attemptModifyLayerChange(history);
+        attemptShiftModify(history) || attemptGuiModify(history);
+        return true;
+      },
+      5: () => attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
       6: () => attemptOccupyForceEmpty(history)
-        || attemptSpaceKey(history, () => _cbs.holdKey({ character: ' ' }), () => _cbs.releaseKey({ character: ' ' }))
-        || attemptEnterKey(history, () => _cbs.holdKey({ character: '\r' }), () => _cbs.releaseKey({ character: '\r' }))
+        || attemptSpaceKey(history, () => _cbs.holdKey({ modifiers: 0, character: ' ' }), () => _cbs.releaseKey({ modifiers: 0, character: ' ' }))
+        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: 0, character: '\r' }), () => _cbs.releaseKey({ modifiers: 0, character: '\r' }))
         || attemptCommitHistory(history, () => this.attemptSendCharacterFromMorse()),
       7: () => attemptOccupyForceEmpty(history)
-        || attemptEnterKey(history, () => _cbs.holdKey({ character: '\r' }), () => _cbs.releaseKey({ character: '\r' })),
+        || attemptEnterKey(history, () => _cbs.holdKey({ modifiers: 0, character: '\r' }), () => _cbs.releaseKey({ modifiers: 0, character: '\r' })),
     } as { [key: number]: () => boolean };
 
     private attemptsOnKeyUp = {
-      0: () => { _cbs.releaseKey({ character: ' ' }); return true; },
+      0: () => attemptCtrlModify(history) || attemptShiftModify(history),
       1: () => attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       2: () => this.attemptForceHistoryEmpty()
@@ -60,7 +69,7 @@ export function createMorseContext() {
       3: () => this.attemptForceHistoryEmpty()
         || attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
-      4: () => true,
+      4: () => attemptShiftModify(history) || attemptGuiModify(history),
       5: () => attemptOccupySebtRelease(history)
         || attemptStoreDashdots(history),
       6: () => this.attemptForceHistoryEmpty()
@@ -120,7 +129,7 @@ export function createMorseContext() {
         trace(`${history.changeFlag} -> ${history.dashDots} is not implemented.\n`);
         return;
       }
-      _cbs.sendKey({ character });
+      _cbs.sendKey({ modifiers: modifierBits(history), character });
     }
 
     private attemptForceHistoryEmpty() {

@@ -49,12 +49,12 @@ export type Options = {
    * A single-character string indicating an ASCII character
    * to send via a keyboard report to the BLE Central.
    */
-  character?: string,
+  character: string,
 
   /**
    * A number with a standard keyboard 8-bit modifier mask.
    */
-  modifiers?: number,
+  modifiers: number,
 };
 
 function getShiftedCharacter(char: string) {
@@ -190,7 +190,7 @@ class HIDKeyboard {
     return true;
   }
 
-  onKeyDown(options: Options) {
+  public onKeyDown(options: Options) {
     if (options.character !== undefined) {
       const info = getHIDCode(options.character);
       if (info === undefined) {
@@ -211,7 +211,7 @@ class HIDKeyboard {
 
   }
 
-  onKeyUp(options: Options) {
+  public onKeyUp() {
     this.report[0] = 0;
     this.report[2] = 0;
   }
