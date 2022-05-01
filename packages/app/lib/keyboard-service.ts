@@ -1,7 +1,7 @@
 import { BLEServer } from "bleserver";
-import { Characteristic, Client } from "gatt";
 import { uuid } from "btutils";
 import { HIDKeyboard } from "./hidkeyboard";
+import type { Characteristic, Client } from "gatt";
 import type { Options } from "./hidkeyboard";
 
 export function createKeyboardService(_params: {

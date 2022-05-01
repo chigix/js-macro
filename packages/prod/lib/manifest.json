@@ -8,28 +8,26 @@
   ],
   "creation": {
     "keys": {
-      "available": 512
+      "available": 32
     },
     "chunk": {
       "initial": 2560,
       "incremental": 512
     },
     "stack": 256,
-    "static": 98304
+    "static": 98304,
+    "main": "js-macro-bundle"
   },
   "defines": {
-    "XS_MODS": 1
+    "XS_MODS": 0
   },
   "modules": {
     "*": [
-      "./main",
-      "$(MODULES)/base/modules/*"
+      "./js-macro-bundle"
     ]
   },
   "preload": [
-    "./main",
-    "./hidkeyboard",
-    "modules"
+    "./js-macro-bundle"
   ],
   "ble": {
     "*" : [ "./bleservices/*" ]

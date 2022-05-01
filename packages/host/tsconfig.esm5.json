@@ -5,13 +5,10 @@
     "target": "ES2015",
     "outDir": "../../dist/host",
     "lib": ["ES2020"],
-    "types": [],
+    "types": ["moddable"],
   },
   "include": [
     "./lib/main.ts",
-    "/ESP32/moddable/typings/modules.d.ts",
-    "/ESP32/moddable/typings/ble.d.ts",
-    "/ESP32/moddable/typings/console.d.ts",
-    "/ESP32/moddable/xs/includes/xs.d.ts",
   ],
+  "exclude": ["../../node_modules"]
 }

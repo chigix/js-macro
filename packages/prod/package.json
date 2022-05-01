@@ -1,0 +1,25 @@
+{
+  "name": "prod",
+  "version": "0.0.0",
+  "author": "Richard Lea <rlea@outlook.jp>",
+  "homepage": "https://github.com/chigix/js-macro#readme",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chigix/js-macro.git"
+  },
+  "scripts": {
+    "build": "run-s _prod:clear _prod:bundle _prod:ctxFiling",
+    "_prod:clear": "shx rm -rf ../../dist/prod && shx mkdir ../../dist/prod",
+    "_prod:bundle": "webpack --config webpack.config.js --mode production",
+    "_prod:ctxFiling": "shx cp ./lib/*.json ../../dist/prod/ && shx cp -R ../host/lib/bleservices ../../dist/prod/"
+  },
+  "bugs": {
+    "url": "https://github.com/chigix/js-macro/issues"
+  }
+}

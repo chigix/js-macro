@@ -18,9 +18,11 @@
     "url": "git+https://github.com/chigix/js-macro.git"
   },
   "scripts": {
-    "build": "shx rm -r ../../dist/host && tsc --project tsconfig.esm5.json && shx cp ./lib/*.json ../../dist/host/ && shx cp -R ./lib/bleservices ../../dist/host/",
-    "flash": "mcconfig ../../dist/host/manifest.json -d -m -p esp32",
-    "test": "echo \"Error: run tests from root\" && exit 1"
+    "build": "run-s _host:clear _host:tsc _host:ctxFiling",
+    "_host:clear": "shx rm -rf ../../dist/host && shx mkdir ../../dist/host",
+    "_host:tsc": "tsc --project tsconfig.esm5.json",
+    "_host:ctxFiling": "shx cp ./lib/*.json ../../dist/host/ && shx cp -R ./lib/bleservices ../../dist/host/",
+    "flash": "mcconfig ../../dist/host/manifest.json -d -m -p esp32"
   },
   "bugs": {
     "url": "https://github.com/chigix/js-macro/issues"
