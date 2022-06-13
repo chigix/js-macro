@@ -1,17 +1,13 @@
 {
   "name": "prod",
-  "version": "0.0.0",
+  "packageManager": "yarn@3.2.1",
+  "private": true,
   "author": "Richard Lea <rlea@outlook.jp>",
-  "homepage": "https://github.com/chigix/js-macro#readme",
-  "directories": {
-    "lib": "lib"
-  },
-  "files": [
-    "lib"
-  ],
+  "main": "lib/js-macro-bundle.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chigix/js-macro.git"
+    "url": "git+https://github.com/chigix/js-macro.git",
+    "directory": "packages/prod"
   },
   "scripts": {
     "build": "run-s _prod:clear _prod:bundle _prod:ctxFiling",
@@ -19,7 +15,8 @@
     "_prod:bundle": "webpack --config webpack.config.js --mode production",
     "_prod:ctxFiling": "shx cp ./lib/*.json ../../dist/prod/ && shx cp -R ../host/lib/bleservices ../../dist/prod/"
   },
-  "bugs": {
-    "url": "https://github.com/chigix/js-macro/issues"
+  "devDependencies": {
+    "shx": "^0.3.4",
+    "webpack": "^5.73.0"
   }
 }

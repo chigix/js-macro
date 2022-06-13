@@ -1,21 +1,13 @@
 {
   "name": "host",
-  "version": "0.0.0",
-  "description": "The host defines the software environment",
+  "packageManager": "yarn@3.2.1",
+  "private": true,
   "author": "Richard Lea <rlea@outlook.jp>",
-  "homepage": "https://github.com/chigix/js-macro#readme",
-  "license": "ISC",
   "main": "lib/main.js",
-  "directories": {
-    "lib": "lib",
-    "test": "__tests__"
-  },
-  "files": [
-    "lib"
-  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/chigix/js-macro.git"
+    "url": "git+https://github.com/chigix/js-macro.git",
+    "directory": "packages/host"
   },
   "scripts": {
     "build": "run-s _host:clear _host:tsc _host:ctxFiling",
@@ -24,7 +16,8 @@
     "_host:ctxFiling": "shx cp ./lib/*.json ../../dist/host/ && shx cp -R ./lib/bleservices ../../dist/host/",
     "flash": "mcconfig ../../dist/host/manifest.json -d -m -p esp32"
   },
-  "bugs": {
-    "url": "https://github.com/chigix/js-macro/issues"
+  "devDependencies": {
+    "shx": "^0.3.4",
+    "typescript": "^4.7.3"
   }
 }
