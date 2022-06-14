@@ -1,4 +1,4 @@
-import { KeyCountBuffer } from "../lib/morse-buffer";
+import { KeyCountBuffer } from "../morse-buffer";
 
 function randomDashDots(length: number) {
   const result: Array<0 | 1> = [];
